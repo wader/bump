@@ -1,0 +1,7 @@
+### args bump update a
+### input a
+bump: name /name: (1)/ static:2
+bump: name /name: (1)/ static:2
+name: 1
+### errors
+a:2: name already used at a:1

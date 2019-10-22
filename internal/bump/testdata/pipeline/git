@@ -1,0 +1,7 @@
+git://a -> git:git://a
+git:git://a -> git:git://a
+git://a.git -> git:git://a.git
+https://a.git -> git:https://a.git
+
+git:https://github.com/torvalds/linux.git|^3 -> git:https://github.com/torvalds/linux.git|semver:^3
+    -> 3.19:e24f071559c7a928a3033e9fe9f68e52f4f6ec01

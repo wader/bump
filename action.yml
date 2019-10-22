@@ -1,0 +1,27 @@
+name: 'Bump versions'
+description: 'Use bump to create version update pull requests'
+icon: 'chevrons-up'
+author: 'Mattias Wadman'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+inputs:
+  bump_files:
+    description: 'Files with config or versions to update'
+    required: true
+  title_template:
+    description: 'Commit and pull request title template'
+    required: false
+    default: 'Update $name to $version'
+  branch_template:
+    description: 'Pull requests branch name template'
+    required: false
+    default: 'bump-$name-$version'
+  user_name:
+    description: 'Commit user name'
+    required: false
+    default: 'bump'
+  user_email:
+    description: 'Commit user email'
+    required: false
+    default: 'bump-action@github'

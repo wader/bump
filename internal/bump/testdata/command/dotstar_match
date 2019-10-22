@@ -1,0 +1,7 @@
+### args bump update a
+### input a
+// bump: aaa /AAA_VERSION=(.*)/ static:222
+AAA_VERSION=111
+### expected a
+// bump: aaa /AAA_VERSION=(.*)/ static:222
+AAA_VERSION=222

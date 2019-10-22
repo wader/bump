@@ -1,0 +1,4 @@
+sort -> sort
+    1,2,3 -> 3,2,1
+sort: -> sort
+sort:a -> error:arg should be empty

@@ -1,0 +1,5 @@
+value -> value
+value: -> value
+@ -> value
+    1:a -> 1:a
+value:a -> error:arg should be empty

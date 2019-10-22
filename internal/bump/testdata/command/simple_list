@@ -1,0 +1,6 @@
+### args bump list a
+### input a
+bump: name /name: (1)/ static:2
+name: 1
+### stdout
+name

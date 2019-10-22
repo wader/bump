@@ -1,0 +1,9 @@
+### args bump help static
+### stdout
+Syntax:
+static:<name[:value]>,...
+
+Produce version pairs from filter argument.
+
+Examples:
+bump pipeline 'static:1,2,3|sort'

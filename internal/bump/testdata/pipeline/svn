@@ -1,0 +1,3 @@
+svn:https://a -> svn:https://a
+svn:https://svn.apache.org/repos/asf/subversion|semver:1.12.2 -> svn:https://svn.apache.org/repos/asf/subversion|semver:1.12.2
+    -> 1.12.2:1863370

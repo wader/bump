@@ -1,0 +1,5 @@
+### args bump update a
+### input a
+bump: name /name: (1)/ static:2
+### errors
+a:1: name has no current version matches

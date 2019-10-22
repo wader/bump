@@ -1,0 +1,11 @@
+static:1,2,3 -> static:1,2,3
+    -> 1,2,3
+static:1:a,2:b,3:c -> static:1:a,2:b,3:c
+    -> 1:a,2:b,3:c
+static:1,2:b -> static:1,2:b
+    -> 1,2:b
+
+static:a\n:b\n -> static:a\n:b\n
+    -> error:name contains control characters "a\n"
+static:a\n:b\n|value -> static:a\n:b\n|value
+    -> error:value contains control characters "b\n"

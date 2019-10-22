@@ -1,0 +1,18 @@
+^2 -> semver:^2
+    ->
+    1,2 -> 2
+semver:n -> semver:n
+    1.2.3 -> 1
+n.n -> semver:n.n
+    1.2.3 -> 1.2
+n.n.n -> semver:n.n.n
+    1.2.3 -> 1.2.3
+n.n.n-pre+build -> semver:n.n.n-pre+build
+    1.2.3-aaa+bbb:v -> 1.2.3-aaa+bbb:v
+semver:vn.n.n.n -> semver:vn.n.n.n
+    1.2.3:v -> v1.2.3.n:v
+
+# TODO: constraintStr = "*" ? hmm
+
+n -> error:no filter matches
+n. -> error:no filter matches

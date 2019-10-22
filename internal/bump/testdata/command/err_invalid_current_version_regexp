@@ -1,0 +1,5 @@
+### args bump update a
+### input a
+bump: name /(/ static:2
+### errors
+a:1: invalid current version regexp: "("

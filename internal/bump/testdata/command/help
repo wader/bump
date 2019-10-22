@@ -1,0 +1,34 @@
+### args bump help
+### stderr
+Usage: bump [OPTIONS] COMMAND
+OPTIONS:
+  -e string             Exclude specified names (space or comma separated)
+  -i string             Include specified names (space or comma separated)
+  -v                    Verbose
+
+COMMANDS:
+  version               Show version of bump itself (test)
+  help [FILTER]         Show help or filter help
+  list FILES...         Show bump configurations
+  current FILES...      Show current versions
+  check FILES...        Check for possible version updates
+  update FILES...       Update versions
+  diff FILES...         Show diff of what an update would change
+  pipeline PIPELINE     Run a filter pipeline
+
+FILES is files with CONFIGURATION or versions to be checked or updated
+PIPELINE is a filter pipeline: FILTER|FILTER|...
+FILTER
+  git:<repo> or <repo.git>
+  docker:<image>
+  svn:<repo>
+  fetch:<url>, <http://> or <https://>
+  semver:<constraint>, semver:<n.n.n-pre+build>, <constraint> or <n.n.n-pre+build>
+  re:/<regexp>/, re:/<regexp>/<template>/, /<regexp>/ or /<regexp>/<template>/
+  sort
+  value or @
+  static:<name[:value]>,...
+  err:<error>
+CONFIGURATION lines looks like this: bump: NAME /REGEXP/ PIPELINE
+NAME is a configuration identifier
+REGEXP is a regexp with one submatch to find current version

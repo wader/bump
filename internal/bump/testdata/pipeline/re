@@ -1,0 +1,32 @@
+/^a.*$/ -> re:/^a.*$/
+    ->
+    a:1,b:2,c:3 -> a:1
+    aa:1,b:2,ab:3 -> aa:1,ab:3
+
+# just filter
+re:/a/ -> re:/a/
+    a:1,b:2,c:3 -> a:1
+
+# simple replace
+re:/a/b/ -> re:/a/b/
+    a:1,b:2,c:3 -> b:1
+re:/a/b/ -> re:/a/b/
+    bab:1 -> bbb:1
+
+# submatch replace
+/a(.)/ -> re:/a(.)/
+    ab:1 -> b:1
+
+# multiple submatch replace
+/(.)(.)/${0}$2$1/ -> re:/(.)(.)/${0}$2$1/
+    ab:1 -> abba:1
+
+# named submatch name/value
+/(?P<name>.)(?P<value>.)/ -> re:/(?P<name>.)(?P<value>.)/
+    ab,cd -> a:b,c:d
+
+re:/(/ -> error:error parsing regexp: missing closing ): `(`
+re:/(// -> error:error parsing regexp: missing closing ): `(`
+
+static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2 -> static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2
+    -> 3.1.2

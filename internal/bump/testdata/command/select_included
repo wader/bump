@@ -1,0 +1,8 @@
+### args bump -i name1 check a
+### input a
+bump: name1 /name1: (1)/ static:2
+bump: name2 /name2: (1)/ static:2
+name1: 1
+name2: 1
+### stdout
+name1 2
