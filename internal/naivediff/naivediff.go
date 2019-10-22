@@ -1,6 +1,6 @@
 // Package naivediff generates a unified diff between two texts wih the same amount of lines
 // WARNING: Is naive because it assumes source and destination text have the same number of lines.
-// Should only be used to make changes not to lines, not add or delete lines.
+// Should only be used to make changes to lines, not add or delete lines.
 package naivediff
 
 import (
