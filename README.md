@@ -332,6 +332,7 @@ test
 
 ## Ideas, TODOs and known issues
 
+- GitHub action: some kind of tests
 - Proper version number for bump itself
 - Some kind of Bumpfile with config and paths to check for updates?
 - How to use with hg
