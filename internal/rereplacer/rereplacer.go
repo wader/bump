@@ -81,7 +81,7 @@ func (r Replacer) Replace(s []byte) []byte {
 	})
 
 	// build new using edits
-	n := bytes.Buffer{}
+	n := &bytes.Buffer{}
 	lastIndex := 0
 	for _, e := range edits {
 		if e.loc[0] < lastIndex {
