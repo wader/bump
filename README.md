@@ -45,7 +45,7 @@ on:
     # minute hour dom month dow (UTC)
     - cron: '0 9 * * *'
 jobs:
-  version_update:
+  bump:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master

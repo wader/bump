@@ -36,7 +36,7 @@ on:
     # minute hour dom month dow (UTC)
     - cron: '0 9 * * *'
 jobs:
-  version_update:
+  bump:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -130,6 +130,7 @@ produces versions, `re` and `semver` transforms and filters.
 
 ## Ideas, TODOs and known issues
 
+- GitHub action: some kind of tests
 - Proper version number for bump itself
 - Some kind of Bumpfile with config and paths to check for updates?
 - How to use with hg
