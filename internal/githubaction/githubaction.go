@@ -65,9 +65,11 @@ func Run() []error {
 		return []error{err}
 	}
 
+	pushURL := fmt.Sprintf("https://%s:%s@github.com/%s.git", ae.Actor, ae.Client.Token, ae.Repository)
 	err = runCmds([][]string{
 		{"git", "config", "--global", "user.name", userName},
 		{"git", "config", "--global", "user.email", userEmail},
+		{"git", "remote", "set-url", "--push", "origin", pushURL},
 	})
 	if err != nil {
 		return []error{err}
