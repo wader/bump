@@ -2,7 +2,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -12,6 +14,9 @@ import (
 )
 
 func main() {
+	listBuf := &bytes.Buffer{}
+	filtersBuf := &bytes.Buffer{}
+
 	for _, nf := range all.Filters() {
 		syntax, description, examples := filter.ParseHelp(nf.Help)
 
@@ -47,14 +52,19 @@ func main() {
 			}
 		}
 
-		fmt.Fprintf(os.Stdout,
-			strings.NewReplacer(
-				"{{name}}", nf.Name,
-				"{{syntax}}", strings.Join(syntaxMDParts, ""),
-				"{{desc}}", description,
-				"{{examples}}", strings.Join(examplesMDParts, "\n"),
-				"{{block}}", "```",
-			).Replace(`
+		replacer := strings.NewReplacer(
+			"{{name}}", nf.Name,
+			"{{syntax}}", strings.Join(syntaxMDParts, ""),
+			"{{desc}}", description,
+			"{{examples}}", strings.Join(examplesMDParts, "\n"),
+			"{{block}}", "```",
+		)
+
+		fmt.Fprintf(listBuf, replacer.Replace(`
+[{{name}}](#{{name}}) {{syntax}}  
+`[1:]))
+
+		fmt.Fprintf(filtersBuf, replacer.Replace(`
 ### {{name}}
 
 {{syntax}}
@@ -67,4 +77,7 @@ func main() {
 
 `[1:]))
 	}
+
+	io.Copy(os.Stdout, listBuf)
+	io.Copy(os.Stdout, filtersBuf)
 }

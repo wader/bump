@@ -29,8 +29,8 @@ If a template is defined and no submatches was defined it will be used as a
 replacement string. If submatches are defined it will be used as a template
 to expand $0, ${1}, $name etc.
 
-A regexp can match many times in the same name. Use ^$ anchors or (?m:) to
-match just one or per line.
+A regexp can match many times. Use ^$ anchors or (?m:) to match just one time
+or per line.
 
 # just filter
 static:a,b|/b/

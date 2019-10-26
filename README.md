@@ -34,9 +34,9 @@ $ bump update examples/Dockerfile
 
 ## GitHub action
 
-Bump can be used a github action using the action `wader/bump@master`.
-For example this workflow periodically looks for new versions and
-creates PRs.
+Bump can be used as a github action using the action `wader/bump@master`.
+For example this workflow will look for new versions and creates PRs
+one time per day.
 
 ```yml
 name: 'Automatic version updates'
@@ -120,15 +120,15 @@ REGEXP is a regexp with one submatch to find current version
 
 `bump` looks for lines looking like this:
 ```
-bump: name /regexp/ pipeline
+bump: NAME /REGEXP/ PIPELINE
 ```
 
-`name` is a name of the software etc this configuration is for.
+`NAME` is a name of the software etc this configuration is for.
 
-`regexp` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
+`REGEXP` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
 one submatch/capture group to find the current version.
 
-`pipeline` is a pipeline of filters that describes how to find the latest
+`PIPELINE` is a pipeline of filters that describes how to find the latest
 suitable version. The syntax is similar to pipes in a shell `filter|filter|...`
 where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
@@ -172,6 +172,16 @@ Filter are used to produce, transform and filter versions. Some filters like `gi
 produces versions, `re` and `semver` transforms and filters.
 
 [filtersmarkdown]: sh
+[git](#git) `git:<repo>` or `<repo.git>`  
+[docker](#docker) `docker:<image>`  
+[svn](#svn) `svn:<repo>`  
+[fetch](#fetch) `fetch:<url>`, `<http://>` or `<https://>`  
+[semver](#semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`  
+[re](#re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`  
+[sort](#sort) `sort`  
+[value](#value) `value` or `@`  
+[static](#static) `static:<name[:value]>,...`  
+[err](#err) `err:<error>`  
 ### git
 
 `git:<repo>` or `<repo.git>`
@@ -206,7 +216,7 @@ be the tag or branch name, value the revision.
 
 ```sh
 $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
-1.12.2
+1.13.0
 ```
 
 ### fetch
@@ -260,8 +270,8 @@ If a template is defined and no submatches was defined it will be used as a
 replacement string. If submatches are defined it will be used as a template
 to expand $0, ${1}, $name etc.
 
-A regexp can match many times in the same name. Use ^$ anchors or (?m:) to
-match just one or per line.
+A regexp can match many times. Use ^$ anchors or (?m:) to match just one time
+or per line.
 
 ```sh
 # just filter

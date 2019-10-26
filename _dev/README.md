@@ -25,9 +25,9 @@ $ bump update examples/Dockerfile
 
 ## GitHub action
 
-Bump can be used a github action using the action `wader/bump@master`.
-For example this workflow periodically looks for new versions and
-creates PRs.
+Bump can be used as a github action using the action `wader/bump@master`.
+For example this workflow will look for new versions and creates PRs
+one time per day.
 
 ```yml
 name: 'Automatic version updates'
@@ -79,15 +79,15 @@ $ bump help
 
 `bump` looks for lines looking like this:
 ```
-bump: name /regexp/ pipeline
+bump: NAME /REGEXP/ PIPELINE
 ```
 
-`name` is a name of the software etc this configuration is for.
+`NAME` is a name of the software etc this configuration is for.
 
-`regexp` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
+`REGEXP` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
 one submatch/capture group to find the current version.
 
-`pipeline` is a pipeline of filters that describes how to find the latest
+`PIPELINE` is a pipeline of filters that describes how to find the latest
 suitable version. The syntax is similar to pipes in a shell `filter|filter|...`
 where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
