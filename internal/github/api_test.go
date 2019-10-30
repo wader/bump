@@ -274,6 +274,85 @@ func TestCreateComment(t *testing.T) {
 	}
 }
 
+func TestIsValidBranchName(t *testing.T) {
+	testCases := []struct {
+		s string
+		e string
+	}{
+		{``, "can't be empty"},
+		{`.a`, "can't start with '.'"},
+		{`a/`, "can't end with '/'"},
+		{`a.lock`, "can't end with '.lock'"},
+		{`/a/`, "can't end with '/'"},
+		{`~`, `can't include any of '~^: \@?*{}[]'`},
+		{`^`, `can't include any of '~^: \@?*{}[]'`},
+		{`:`, `can't include any of '~^: \@?*{}[]'`},
+		{` `, `can't include any of '~^: \@?*{}[]'`},
+		{`\`, `can't include any of '~^: \@?*{}[]'`},
+		{`@`, `can't include any of '~^: \@?*{}[]'`},
+		{`?`, `can't include any of '~^: \@?*{}[]'`},
+		{`*`, `can't include any of '~^: \@?*{}[]'`},
+		{`{`, `can't include any of '~^: \@?*{}[]'`},
+		{`}`, `can't include any of '~^: \@?*{}[]'`},
+		{`[`, `can't include any of '~^: \@?*{}[]'`},
+		{`]`, `can't include any of '~^: \@?*{}[]'`},
+		{"\x00", "can't include control characters"},
+		{"\x01", "can't include control characters"},
+		{"\x02", "can't include control characters"},
+		{"\x03", "can't include control characters"},
+		{"\x04", "can't include control characters"},
+		{"\x05", "can't include control characters"},
+		{"\x06", "can't include control characters"},
+		{"\x07", "can't include control characters"},
+		{"\x08", "can't include control characters"},
+		{"\x09", "can't include control characters"},
+		{"\x0a", "can't include control characters"},
+		{"\x0b", "can't include control characters"},
+		{"\x0c", "can't include control characters"},
+		{"\x0d", "can't include control characters"},
+		{"\x0e", "can't include control characters"},
+		{"\x0f", "can't include control characters"},
+		{"\x10", "can't include control characters"},
+		{"\x11", "can't include control characters"},
+		{"\x12", "can't include control characters"},
+		{"\x13", "can't include control characters"},
+		{"\x14", "can't include control characters"},
+		{"\x15", "can't include control characters"},
+		{"\x16", "can't include control characters"},
+		{"\x17", "can't include control characters"},
+		{"\x18", "can't include control characters"},
+		{"\x19", "can't include control characters"},
+		{"\x1a", "can't include control characters"},
+		{"\x1b", "can't include control characters"},
+		{"\x1c", "can't include control characters"},
+		{"\x1d", "can't include control characters"},
+		{"\x1e", "can't include control characters"},
+		{"\x1f", "can't include control characters"},
+		{"\x7f", "can't include control characters"},
+		{`a`, ""},
+		{`ab/cd/ab-cd-ab.cd_ab_cd`, ""},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.s, func(t *testing.T) {
+			actual := IsValidBranchName(tC.s)
+			expected := tC.e
+
+			if expected == "" {
+				if actual != nil {
+					t.Errorf("expected nil got %s", actual.Error())
+
+				}
+			} else {
+				if actual == nil {
+					t.Errorf("expected %s got nil", expected)
+				} else if expected != actual.Error() {
+					t.Errorf("expected %s got %s", expected, actual.Error())
+				}
+			}
+		})
+	}
+}
+
 // // user to do test requests durinv dev
 // func TestRealAPI(t *testing.T) {
 // 	c := &Client{

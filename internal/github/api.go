@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -22,6 +24,48 @@ func StrR(s string) *string {
 // BoolR creates a bool ref
 func BoolR(b bool) *bool {
 	return &b
+}
+
+var cntrlRe = regexp.MustCompile(`[[:cntrl:]]`)
+
+// IsValidBranchName checks if a string is a valid git branch name
+// Might be a bit more strict than git itself
+// https://wincent.com/wiki/Legal_Git_branch_names
+// Cant:
+// Have a path component that begins with "."
+// Have a double dot "…"
+// Have an ASCII control character, "~", "^", ":" or SP, anywhere
+// End with a "/"
+// End with ".lock"
+// Contain a "\" (backslash)
+// the sequence @{ is not allowed
+// ? and [ are not allowed
+// * is allowed only if it constitutes an entire path component (eg. foo/* or bar/*/baz), in which case it is interpreted as a wildcard and not as part of the actual ref name
+func IsValidBranchName(b string) error {
+	if len(b) == 0 {
+		return fmt.Errorf("can't be empty")
+	}
+	if strings.HasPrefix(b, ".") {
+		return fmt.Errorf("can't start with '.'")
+	}
+	if strings.HasSuffix(b, "/") {
+		return fmt.Errorf("can't end with '/'")
+	}
+	if strings.HasSuffix(b, ".lock") {
+		return fmt.Errorf("can't end with '.lock'")
+	}
+	if strings.Contains(b, "..") {
+		return fmt.Errorf("can't include '..'")
+	}
+	if cntrlRe.MatchString(b) {
+		return fmt.Errorf("can't include control characters")
+	}
+	invalidChars := `~^: \@?*{}[]`
+	if strings.ContainsAny(b, invalidChars) {
+		return fmt.Errorf("can't include any of '%s'", invalidChars)
+	}
+
+	return nil
 }
 
 // PullRequest is a GitHub Pull request fetched from the API
