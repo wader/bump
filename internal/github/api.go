@@ -275,11 +275,8 @@ type Comment struct {
 type Client struct {
 	BaseURL    string
 	Token      string
+	Version    string // used in user-agent
 	HTTPClient *http.Client
-}
-
-func NewClient(token string) (*Client, error) {
-	return &Client{Token: token}, nil
 }
 
 func (c *Client) URL(path string, params []string) (*url.URL, error) {
@@ -330,6 +327,8 @@ func (c *Client) Do(method, path string, params []string, body interface{}, out 
 		return err
 	}
 
+	// https://developer.github.com/v3/#user-agent-required
+	req.Header.Set("User-Agent", "https://github.com/wader/bump "+c.Version)
 	req.Header.Add("Accept", "application/vnd.github.v3+json")
 	req.Header.Add("Authorization", "token "+c.Token)
 

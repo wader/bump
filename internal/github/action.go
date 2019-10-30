@@ -29,7 +29,7 @@ type ActionEnv struct {
 }
 
 // NewActionEnv creates a new ActionEnv
-func NewActionEnv(getenv getenvFn) (*ActionEnv, error) {
+func NewActionEnv(getenv getenvFn, version string) (*ActionEnv, error) {
 	getenvOrErr := func(name string) (string, error) {
 		v := getenv(name)
 		if v == "" {
@@ -60,9 +60,9 @@ func NewActionEnv(getenv getenvFn) (*ActionEnv, error) {
 	}
 	repositoryParts := strings.SplitN(repository, "/", 2)
 
-	client, err := NewClient(token)
-	if err != nil {
-		return nil, err
+	client := &Client{
+		Token:   token,
+		Version: version,
 	}
 
 	return &ActionEnv{

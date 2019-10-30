@@ -40,21 +40,25 @@ func responseClient(fn func(*http.Request) (interface{}, int)) *http.Client {
 func TestHeaders(t *testing.T) {
 	gotCalled := false
 	c := &Client{
-		Token: "abc",
+		Token:   "abc",
+		Version: "test",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
 			gotCalled = true
 			type c struct {
+				UserAgent     string
 				Accept        string
 				Authorization string
 				ContentType   string
 			}
 
 			expectedC := c{
+				UserAgent:     "https://github.com/wader/bump test",
 				Accept:        "application/vnd.github.v3+json",
 				Authorization: "token abc",
 				ContentType:   "application/json",
 			}
 			actualC := c{
+				UserAgent:     req.UserAgent(),
 				Accept:        req.Header.Get("Accept"),
 				Authorization: req.Header.Get("Authorization"),
 				ContentType:   req.Header.Get("Content-Type"),
@@ -269,3 +273,14 @@ func TestCreateComment(t *testing.T) {
 		t.Errorf("expected PR %#v, got %#v", expectedComment, actualComment)
 	}
 }
+
+// // user to do test requests durinv dev
+// func TestRealAPI(t *testing.T) {
+// 	c := &Client{
+// 		Token:   "",
+// 		Version: "test",
+// 	}
+// 	prs, err := c.NewRepoRef("user/repo").ListPullRequest()
+// 	log.Printf("err: %#+v\n", err)
+// 	log.Printf("prs: %#+v\n", prs)
+// }

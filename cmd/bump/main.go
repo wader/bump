@@ -14,7 +14,7 @@ func main() {
 	var errs []error
 
 	if os.Getenv("GITHUB_ACTION") != "" {
-		errs = githubaction.Run()
+		errs = githubaction.Run(version)
 	} else {
 		errs = (bump.Command{
 			Version: version,

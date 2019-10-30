@@ -28,8 +28,8 @@ func runCmds(argss [][]string) error {
 }
 
 // Run bump in a github action environment
-func Run() []error {
-	ae, err := github.NewActionEnv(os.Getenv)
+func Run(version string) []error {
+	ae, err := github.NewActionEnv(os.Getenv, version)
 	if err != nil {
 		return []error{err}
 	}
