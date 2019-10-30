@@ -24,15 +24,6 @@ docker:alpine|^3
 // TODO: other registry?
 const defaultIndex = `https://index.docker.io/v1/repositories/%s/tags`
 
-// TODO: digest as value?
-// filter out some tags that does not make sense for bump
-// var ignoreTags = map[string]bool{
-// 	"latest": true,
-// 	"master": true,
-// 	"edge":   true,
-// 	"tip":    true,
-// }
-
 type tag struct {
 	Name string `json:"name"`
 }
