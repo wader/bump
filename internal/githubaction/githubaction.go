@@ -106,7 +106,7 @@ func Run(version string) []error {
 
 		branchName := templateReplacer.Replace(branchTemplate)
 		if err := github.IsValidBranchName(branchName); err != nil {
-			return []error{err}
+			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}
 		}
 
 		prs, err := ae.RepoRef.ListPullRequest("state", "open", "head", ae.Owner+":"+branchName)
