@@ -1,6 +1,6 @@
 ## Bump
 
-A generic version tracking tool.
+A generic version tracking and update tool.
 
 Bump can be used to automate version updates where other version and package
 management system does not fit or can't be used. This can be for example when
