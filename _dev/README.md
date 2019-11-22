@@ -1,6 +1,6 @@
 ## Bump
 
-A generic version tracking tool.
+A generic version tracking and update tool.
 
 Bump can be used to automate version updates where other version and package
 management system does not fit or can't be used. This can be for example when
@@ -25,7 +25,8 @@ $ bump update examples/Dockerfile
 
 ## GitHub action
 
-Bump can be used as a github action using the action `wader/bump@master`.
+Bump can be used as a github action using the action `wader/bump@master`
+or by [providing it and referencing yourself](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/configuring-a-workflow#referencing-actions-in-your-workflow)
 For example this workflow will look for new versions and creates PRs
 one time per day.
 
@@ -46,6 +47,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+Note that if you want bump PRs to trigger other actions like CI builds
+[you currently have to use a personal access token](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#about-workflow-events)
+with repo access and add it as a secret. For example
+add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
 
 ## Install
 

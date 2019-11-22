@@ -34,7 +34,8 @@ $ bump update examples/Dockerfile
 
 ## GitHub action
 
-Bump can be used as a github action using the action `wader/bump@master`.
+Bump can be used as a github action using the action `wader/bump@master`
+or by [providing it and referencing yourself](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/configuring-a-workflow#referencing-actions-in-your-workflow)
 For example this workflow will look for new versions and creates PRs
 one time per day.
 
@@ -55,6 +56,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+Note that if you want bump PRs to trigger other actions like CI builds
+[you currently have to use a personal access token](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#about-workflow-events)
+with repo access and add it as a secret. For example
+add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
 
 ## Install
 
@@ -159,7 +165,7 @@ cbb3c9497549f8856d8cd37ac63af1406a784e58
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.13.3
+1.13.4
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
@@ -191,9 +197,9 @@ the tag or branch name, value the commit hash or tag object.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.23.0
+2.24.0
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.23.0
+2.24.0
 ```
 
 ### docker
