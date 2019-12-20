@@ -58,7 +58,7 @@ func TestRemoteRepos(t *testing.T) {
 		"https://git.xiph.org/theora.git",
 		"git://git.xiph.org:9418/theora.git",
 		"git://git.xiph.org/theora.git",
-		"git://git.videolan.org/x264.git",
+		"https://code.videolan.org/videolan/x264.git",
 		"https://github.com/FFmpeg/FFmpeg.git",
 		"git://github.com/FFmpeg/FFmpeg.git",
 		"https://aomedia.googlesource.com/aom",
