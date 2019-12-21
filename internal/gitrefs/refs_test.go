@@ -38,8 +38,8 @@ func TestLocalRepo(t *testing.T) {
 		t.Errorf("expected %v got %v", expectedRefs, actualRefs)
 	}
 
-	runOrFatal("git", "config", "--global", "user.email", "test")
-	runOrFatal("git", "config", "--global", "user.name", "test")
+	runOrFatal("git", "config", "user.email", "test")
+	runOrFatal("git", "config", "user.name", "test")
 	runOrFatal("git", "commit", "--allow-empty", "--author", "test <test@test>", "--message", "test")
 	sha := strings.TrimSpace(runOrFatal("git", "rev-parse", "HEAD"))
 
