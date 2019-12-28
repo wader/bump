@@ -30,3 +30,13 @@ re:/(// -> error:error parsing regexp: missing closing ): `(`
 
 static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2 -> static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2
     -> 3.1.2
+
+# alternative delimiter
+re:#a# -> re:#a#
+    a:1,b:2,c:3 -> a:1
+
+re:#a#b# -> re:#a#b#
+    bab:1 -> bbb:1
+
+# does not support short syntax
+%a% -> error:no filter matches

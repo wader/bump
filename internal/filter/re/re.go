@@ -16,6 +16,9 @@ const Name = "re"
 var Help = `
 re:/<regexp>/, re:/<regexp>/<template>/, /<regexp>/ or /<regexp>/<template>/
 
+An alternative regex/template delimited can specified by changing the first
+/ into some other character, for example: re:#<regexp>#<template>#.
+
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
 If name does not match regexp the pair will be skipped.
 
@@ -45,9 +48,8 @@ static:ab|re:/(?P<name>.)(?P<value>.)/
 static:ab|re:/(?P<name>.)(?P<value>.)/|@
 `[1:]
 
-func parse(s string) (re *regexp.Regexp, expand string, err error) {
-	// TODO: split respect \ escaping?
-	p := strings.Split(s, `/`)
+func parse(delim string, s string) (re *regexp.Regexp, expand string, err error) {
+	p := strings.Split(s, delim)
 	if len(p) == 3 && p[0] == "" && p[2] == "" {
 		// /re/ -> ["", "re", ""]
 		re, err := regexp.Compile(p[1])
@@ -72,7 +74,13 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 	if prefix != Name && prefix != "" {
 		return nil, nil
 	}
-	re, expand, err := parse(arg)
+
+	delim := "/"
+	if prefix == Name && len(arg) > 0 {
+		delim = arg[0:1]
+	}
+
+	re, expand, err := parse(delim, arg)
 	if err != nil {
 		if prefix == "" {
 			return nil, nil
@@ -80,11 +88,12 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 		return nil, err
 	}
 
-	return reFilter{re: re, expand: expand}, nil
+	return reFilter{re: re, delim: delim, expand: expand}, nil
 }
 
 type reFilter struct {
 	re     *regexp.Regexp
+	delim  string
 	expand string
 }
 
@@ -94,7 +103,7 @@ func (f reFilter) String() string {
 		ss = append(ss, f.expand)
 	}
 
-	return Name + ":" + "/" + strings.Join(ss, "/") + "/"
+	return Name + ":" + f.delim + strings.Join(ss, f.delim) + f.delim
 }
 
 func (f reFilter) Filter(ps pair.Slice) (pair.Slice, error) {

@@ -263,6 +263,9 @@ $ bump pipeline 'static:1.2.3|n.n'
 
 `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`
 
+An alternative regex/template delimited can specified by changing the first
+/ into some other character, for example: re:#<regexp>#<template>#.
+
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
 If name does not match regexp the pair will be skipped.
 
