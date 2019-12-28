@@ -1,0 +1,2 @@
+gitrefs:https://github.com/torvalds/linux.git|re:#^refs/tags/v3\.19$# -> gitrefs:https://github.com/torvalds/linux.git|re:#^refs/tags/v3\.19$#
+    -> refs/tags/v3.19:e24f071559c7a928a3033e9fe9f68e52f4f6ec01

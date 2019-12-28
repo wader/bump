@@ -108,6 +108,7 @@ FILES is files with CONFIGURATION or versions to be checked or updated
 PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
   git:<repo> or <repo.git>
+  gitrefs:<repo>
   docker:<image>
   svn:<repo>
   fetch:<url>, <http://> or <https://>
@@ -157,11 +158,11 @@ use it.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.2.1
+4.2.2
 
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@'
-cbb3c9497549f8856d8cd37ac63af1406a784e58
+b53940e13dde81d721621b4d5296eede5795aadd
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
@@ -179,6 +180,7 @@ produces versions, `re` and `semver` transforms and filters.
 
 [filtersmarkdown]: sh
 [git](#git) `git:<repo>` or `<repo.git>`  
+[gitrefs](#gitrefs) `gitrefs:<repo>`  
 [docker](#docker) `docker:<image>`  
 [svn](#svn) `svn:<repo>`  
 [fetch](#fetch) `fetch:<url>`, `<http://>` or `<https://>`  
@@ -192,14 +194,29 @@ produces versions, `re` and `semver` transforms and filters.
 
 `git:<repo>` or `<repo.git>`
 
-Produce versions from tags and branches from a git repository. Name will be
-the tag or branch name, value the commit hash or tag object.
+Produce versions from tags for a git repository. Name will be
+the version found in the tag, value the commit hash or tag object.
+
+Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
 2.24.1
 $ bump pipeline 'git://github.com/git/git.git|*'
 2.24.1
+```
+
+### gitrefs
+
+`gitrefs:<repo>`
+
+Produce versions from all refs for a git repository.
+
+Use git filter to get versions from only tags.
+
+```sh
+$ bump pipeline 'gitrefs:https://github.com/git/git.git'
+HEAD
 ```
 
 ### docker

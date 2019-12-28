@@ -17,40 +17,25 @@ const Name = "git"
 var Help = `
 git:<repo> or <repo.git>
 
-Produce versions from tags and branches from a git repository. Name will be
-the tag or branch name, value the commit hash or tag object.
+Produce versions from tags for a git repository. Name will be
+the version found in the tag, value the commit hash or tag object.
+
+Use gitrefs filter to get all refs unfiltered.
 
 https://github.com/git/git.git|*
 git://github.com/git/git.git|*
 `[1:]
 
-var digitRe = regexp.MustCompile(`\d`)
-var numAlphaRe = regexp.MustCompile(`\d+[[:alpha:]]+`)
-
-const tagPrefix = "refs/tags/"
-const headsPrefix = "refs/heads/"
-
-// refs/tags/n3.1-dev^{}
-// refs/tags/n3.1.1
-func filterTag(tag string) string {
-	if strings.HasSuffix(tag, "{}") {
-		return ""
-	}
-
-	parts := strings.Split(tag, "/")
-	last := parts[len(parts)-1]
-	loc := digitRe.FindStringIndex(last)
-	if loc == nil {
-		return ""
-	}
-	ver := last[loc[0]:]
-
-	return ver
-}
+// default ref filter
+// refs/tags/<non-digits><version-number> -> version-number
+var refFilterRe = regexp.MustCompile(`^refs/tags/[^\d]*([\d\.]+)$`)
 
 // New git filter
 func New(prefix string, arg string) (filter filter.Filter, err error) {
-	if prefix == Name || strings.HasSuffix(arg, ".git") {
+	// TODO hmm
+	if prefix == Name ||
+		(strings.HasSuffix(arg, ".git") &&
+			(prefix == "git" || prefix == "http" || prefix == "https")) {
 		if strings.HasPrefix(arg, "//") {
 			arg = prefix + ":" + arg
 		}
@@ -81,18 +66,19 @@ func (f gitFilter) Filter(ps pair.Slice) (pair.Slice, error) {
 
 	ps = append(pair.Slice{}, ps...)
 	for _, p := range refPairs {
-		switch {
-		case strings.HasPrefix(p.Name, tagPrefix):
-			name := filterTag(p.Name)
-			if name == "" {
-				continue
-			}
-			ps = append(ps, pair.Pair{Name: name, Value: p.ObjID})
-		case strings.HasPrefix(p.Name, headsPrefix):
-			ps = append(ps, pair.Pair{Name: p.Name[len(headsPrefix):], Value: p.ObjID})
-		default:
+		sm := refFilterRe.FindStringSubmatch(p.Name)
+		// find first non-empty submatch
+		if sm == nil {
 			continue
 		}
+		var name string
+		for _, m := range sm[1:] {
+			if m != "" {
+				name = m
+				break
+			}
+		}
+		ps = append(ps, pair.Pair{Name: name, Value: p.ObjID})
 	}
 
 	return ps, nil

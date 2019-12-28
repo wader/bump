@@ -20,6 +20,7 @@ FILES is files with CONFIGURATION or versions to be checked or updated
 PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
   git:<repo> or <repo.git>
+  gitrefs:<repo>
   docker:<image>
   svn:<repo>
   fetch:<url>, <http://> or <https://>
