@@ -17,7 +17,7 @@ FROM alpine:3.9.3 AS builder
 
 # See possible updates
 $ bump check examples/Dockerfile
-alpine 3.10.3
+alpine 3.11.2
 
 # See what will be changed
 $ bump diff examples/Dockerfile
@@ -26,7 +26,7 @@ $ bump diff examples/Dockerfile
 @@ -1,2 +1,2 @@
  # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 -FROM alpine:3.9.3 AS builder
-+FROM alpine:3.10.3 AS builder
++FROM alpine:3.11.2 AS builder
 
 # Write changes
 $ bump update examples/Dockerfile
@@ -165,7 +165,7 @@ cbb3c9497549f8856d8cd37ac63af1406a784e58
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.13.4
+1.13.5
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
@@ -197,9 +197,9 @@ the tag or branch name, value the commit hash or tag object.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.24.0
+2.24.1
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.24.0
+2.24.1
 ```
 
 ### docker
@@ -210,7 +210,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.10.3
+3.11.2
 ```
 
 ### svn
@@ -266,8 +266,8 @@ $ bump pipeline 'static:1.2.3|n.n'
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
 If name does not match regexp the pair will be skipped.
 
-If only a regexp is provided and no submatches are defined the
-name will no be changed.
+If only a regexp and no template is provided and no submatches are defined the
+name will not be changed.
 
 If submatches are defined a submatch named "name" or "value" will be used as
 name and value otherwise first submatch will be used as name.

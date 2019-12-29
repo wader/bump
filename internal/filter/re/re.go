@@ -19,8 +19,8 @@ re:/<regexp>/, re:/<regexp>/<template>/, /<regexp>/ or /<regexp>/<template>/
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
 If name does not match regexp the pair will be skipped.
 
-If only a regexp is provided and no submatches are defined the
-name will no be changed.
+If only a regexp and no template is provided and no submatches are defined the
+name will not be changed.
 
 If submatches are defined a submatch named "name" or "value" will be used as
 name and value otherwise first submatch will be used as name.
