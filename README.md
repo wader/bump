@@ -8,7 +8,7 @@ having versions of dependencies in Makefiles, Dockerfiles, scripts or other
 kinds of texts.
 
 For example this is a Dockerfile where we want to keep the base image version
-updated to the latest exact alpine 3.0 version.
+updated to the latest exact alpine 3 version.
 
 ```sh (exec)
 $ cat examples/Dockerfile
@@ -31,6 +31,10 @@ $ bump diff examples/Dockerfile
 # Write changes
 $ bump update examples/Dockerfile
 ```
+
+A real world example is the
+[Dockerfile used by wader/static-ffmpeg](https://github.com/wader/static-ffmpeg/blob/master/Dockerfile)
+where important libraries are automatically kept up to date using the bump github action.
 
 ## GitHub action
 
@@ -145,15 +149,19 @@ Usually the lines will be in comments or in a separate file.
 ## Pipeline
 
 A pipeline consist of one or more filters executed in sequence. Usually
-starts with a filter that produces versions from a source like a git repository.
-After that usually zero or more filters are used to narrow down to one version.
-The first version will be used if the last filter produces more than one.
+it starts with a filter that produces versions from a source like a git repository.
+After that one or filters can be used to narrow down to one version.
+If a pipeline ends up producing more than one version the first will be used.
 
-A version can optionally have a associated value that can be for example a hash
-of the git tag used as version. Use the `value`/`@` filter last in a pipeline to
-use it.
+A version can optionally have a associated value that can for example in the git case
+be the commit hash of the tag. To use the value instead of the version use the
+`value` or `@` filter last in a pipeline.
 
 ### Examples
+
+In the examples `bump pipeline PIPELINE` is used to test run a pipeline and show
+the result. Use `bump -v pipeline PIPELINE` for even more verbose output that
+can be helpful when testing pipelines.
 
 ```sh (exec)
 # Latest 4.0 ffmpeg version
@@ -166,7 +174,7 @@ b53940e13dde81d721621b4d5296eede5795aadd
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.13.5
+1.13.6
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
