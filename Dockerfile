@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 go build -o /bump -tags netgo -ldflags '-extldflags "-static"'
 RUN cmd/bump/main_test.sh /bump
 
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
-FROM alpine:3.11.2
+FROM alpine:3.11.3
 # git is used by github action code
 RUN apk add --no-cache git
 COPY --from=builder /bump /usr/local/bin
