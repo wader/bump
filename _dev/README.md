@@ -31,8 +31,7 @@ where important libraries are automatically kept up to date using the bump githu
 
 Bump can be used as a github action using the action `wader/bump@master`
 or by [providing it and referencing yourself](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/configuring-a-workflow#referencing-actions-in-your-workflow)
-For example this workflow will look for new versions and creates PRs
-one time per day.
+Here is a workflow that will look for new versions and creates PRs once per day:
 
 ```yml
 name: 'Automatic version updates'
