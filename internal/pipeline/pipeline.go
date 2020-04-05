@@ -84,10 +84,6 @@ func (pl Pipeline) Run(inPp pair.Slice, logFn func(format string, v ...interface
 		return "", pp, nil
 	}
 
-	if hasControlCharacters(pp[0].Name) || hasControlCharacters(pp[0].Value) {
-
-	}
-
 	// if value/@ filter is last return value instead of name
 	if _, ok := lastF.(filter.Valuer); ok {
 		if hasControlCharacters(pp[0].Value) {
