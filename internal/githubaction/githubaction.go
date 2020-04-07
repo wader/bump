@@ -124,14 +124,15 @@ func Run(version string) []error {
 			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}
 		}
 
-		prs, err := ae.RepoRef.ListPullRequest("state", "open", "head", ae.Owner+":"+branchName)
+		prs, err := ae.RepoRef.ListPullRequest("state", "all", "head", ae.Owner+":"+branchName)
 		if err != nil {
 			return []error{err}
 		}
 
-		// there is already an open PR for this update
+		// there is already an open or closed PR for this update
 		if len(prs) > 0 {
-			fmt.Printf("  Open PR %d already exists\n", prs[0].Number)
+			fmt.Printf("  Open or closed PR %d %s already exists\n",
+				prs[0].Number, ae.Owner+":"+branchName)
 
 			// TODO: do get pull request and check for mergable and rerun/close if needed?
 			continue
