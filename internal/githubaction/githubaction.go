@@ -27,6 +27,24 @@ func runCmds(argss [][]string) error {
 	return nil
 }
 
+// CheckTemplateReplaceFn buils a function for doing template replacing for check
+func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
+	var currentVersions []string
+	for _, c := range c.Currents {
+		currentVersions = append(currentVersions, c.Version)
+	}
+
+	r := strings.NewReplacer(
+		"$name", c.Name,
+		"$version", c.Latest,
+		"$current", strings.Join(currentVersions, ", "),
+	)
+
+	return func(s string) string {
+		return r.Replace(s)
+	}
+}
+
 // Run bump in a github action environment
 func Run(version string) []error {
 	ae, err := github.NewActionEnv(os.Getenv, version)
@@ -99,12 +117,9 @@ func Run(version string) []error {
 
 		fmt.Printf("  Updateable to %s\n", c.Latest)
 
-		templateReplacer := strings.NewReplacer(
-			"$name", c.Name,
-			"$version", c.Latest,
-		)
+		templateReplacerFn := CheckTemplateReplaceFn(c)
 
-		branchName := templateReplacer.Replace(branchTemplate)
+		branchName := templateReplacerFn(branchTemplate)
 		if err := github.IsValidBranchName(branchName); err != nil {
 			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}
 		}
@@ -145,7 +160,7 @@ func Run(version string) []error {
 			fmt.Printf("  Wrote change to %s\n", f.Name)
 		}
 
-		title := templateReplacer.Replace(titleTemplate)
+		title := templateReplacerFn(titleTemplate)
 		err = runCmds([][]string{
 			{"git", "diff"},
 			{"git", "add", "--update"},

@@ -12,7 +12,7 @@ inputs:
   title_template:
     description: 'Commit and pull request title template'
     required: false
-    default: 'Update $name to $version'
+    default: 'Update $name from $current to $version'
   branch_template:
     description: 'Pull requests branch name template'
     required: false
