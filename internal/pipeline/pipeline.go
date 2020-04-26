@@ -12,10 +12,10 @@ import (
 // Pipeline is a slice of filters
 type Pipeline []filter.Filter
 
-var controlCharactersRe = regexp.MustCompile(`[[:cntrl:]]`)
+var cntrlRe = regexp.MustCompile(`[[:cntrl:]]`)
 
 func hasControlCharacters(s string) bool {
-	return controlCharactersRe.MatchString(s)
+	return cntrlRe.MatchString(s)
 }
 
 // New pipeline
@@ -24,16 +24,11 @@ func New(filters []filter.NamedFilter, pipelineStr string) (pipeline Pipeline, e
 
 	parts := strings.Split(pipelineStr, `|`)
 
-	for i, filterExp := range parts {
+	for _, filterExp := range parts {
 		filterExp = strings.TrimSpace(filterExp)
 		f, err := filter.New(filters, filterExp)
 		if err != nil {
 			return nil, err
-		}
-
-		// value/@ filter only makes sense to have last
-		if _, ok := f.(filter.Valuer); ok && i != len(parts)-1 {
-			return nil, fmt.Errorf("value filter must be last")
 		}
 
 		ppl = append(ppl, f)
@@ -54,7 +49,6 @@ func (pl Pipeline) String() string {
 
 // Run pipeline
 func (pl Pipeline) Run(inPp pair.Slice, logFn func(format string, v ...interface{})) (value string, pp pair.Slice, err error) {
-	var lastF filter.Filter
 	pp = inPp
 
 	for _, f := range pl {
@@ -76,20 +70,10 @@ func (pl Pipeline) Run(inPp pair.Slice, logFn func(format string, v ...interface
 				logFn("  = %+v", pp)
 			}
 		}
-
-		lastF = f
 	}
 
 	if len(pp) == 0 {
 		return "", pp, nil
-	}
-
-	// if value/@ filter is last return value instead of name
-	if _, ok := lastF.(filter.Valuer); ok {
-		if hasControlCharacters(pp[0].Value) {
-			return "", nil, fmt.Errorf("value contains control characters %q", pp[0].Value)
-		}
-		return pp[0].Value, pp, nil
 	}
 
 	if hasControlCharacters(pp[0].Name) {

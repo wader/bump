@@ -21,19 +21,6 @@ func (t testFilter) Filter(ps pair.Slice) (pair.Slice, error) {
 	return t.ps, nil
 }
 
-func (t testValuerFilter) String() string {
-	return "b"
-}
-
-type testValuerFilter struct{}
-
-func (t testValuerFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	return ps, nil
-}
-
-func (t testValuerFilter) Value() {
-}
-
 func testPipeline(t *testing.T, pipelineStr string) Pipeline {
 	p, err := New(
 		[]filter.NamedFilter{
@@ -42,15 +29,6 @@ func testPipeline(t *testing.T, pipelineStr string) Pipeline {
 				NewFn: func(prefix string, arg string) (filter.Filter, error) {
 					if arg == "a" {
 						return testFilter{name: "a", ps: pair.Slice{{Name: "a", Value: "1"}}}, nil
-					}
-					return nil, nil
-				},
-			},
-			{
-				Name: "v",
-				NewFn: func(prefix string, arg string) (filter.Filter, error) {
-					if arg == "v" {
-						return testValuerFilter{}, nil
 					}
 					return nil, nil
 				},
@@ -95,19 +73,6 @@ func TestRun(t *testing.T) {
 func TestValue(t *testing.T) {
 	p := testPipeline(t, "a|a")
 	expectedValue := "a"
-	actualValue, errValue := p.Value(nil)
-
-	if errValue != nil {
-		t.Fatal(errValue)
-	}
-	if expectedValue != actualValue {
-		t.Errorf("expected value %q got %q", expectedValue, actualValue)
-	}
-}
-
-func TestValuer(t *testing.T) {
-	p := testPipeline(t, "a|v")
-	expectedValue := "1"
 	actualValue, errValue := p.Value(nil)
 
 	if errValue != nil {

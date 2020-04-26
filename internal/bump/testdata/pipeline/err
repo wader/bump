@@ -1,2 +1,6 @@
 err:test -> err:test
     -> error:test
+static:a\n:b\n -> static:a\n:b\n
+    -> error:name contains control characters "a\n"
+static:a\n:b\n|value -> static:a\n:b\n|value
+    -> error:name contains control characters "b\n"

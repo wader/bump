@@ -17,11 +17,6 @@ type Filter interface {
 	Filter(ps pair.Slice) (pair.Slice, error)
 }
 
-// Valuer returns a value (used for @/value filter)
-type Valuer interface {
-	Value()
-}
-
 // NewFilterFn function used to create a new filter
 type NewFilterFn func(prefix string, arg string) (Filter, error)
 

@@ -378,7 +378,8 @@ c
 
 `value` or `@`
 
-Use value instead of name.
+Swap name and value for each pair. Useful to have last in a pipeline
+to use git hash instead of tag name etc.
 
 ```sh
 $ bump pipeline 'static:a:1|@'

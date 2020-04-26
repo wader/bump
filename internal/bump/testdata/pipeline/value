@@ -1,5 +1,5 @@
 value -> value
 value: -> value
 @ -> value
-    1:a -> 1:a
+    1:a,2:b -> a:1,b:2
 value:a -> error:arg should be empty

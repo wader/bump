@@ -14,15 +14,15 @@ const Name = "value"
 var Help = `
 value or @
 
-Use value instead of name.
+Swap name and value for each pair. Useful to have last in a pipeline
+to use git hash instead of tag name etc.
 
 static:a:1|@
 static:a:1|value
 `[1:]
 
 // New value filter
-// Implements Valuer interface. Used last in a pipeline marks that the value
-// instead of name should be the result
+// Used to swap name and value for each pair.
 func New(prefix string, arg string) (filter filter.Filter, err error) {
 	if prefix != Name && prefix != "@" {
 		return nil, nil
@@ -40,7 +40,9 @@ func (f valueFilter) String() string {
 }
 
 func (f valueFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	return ps, nil
+	var sps pair.Slice
+	for _, p := range ps {
+		sps = append(sps, pair.Pair{Name: p.Value, Value: p.Name})
+	}
+	return sps, nil
 }
-
-func (f valueFilter) Value() {}
