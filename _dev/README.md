@@ -181,6 +181,8 @@ produces versions, `re` and `semver` transforms and filters.
 - docker filter: support auth and other registries
 - Named pipelines, "ffmpeg|^4", generate URLs to changelog/diff?
 - Allow to escape `|` in filter argument
+- Allow alternative regexp "/" delimiter in version match or maybe some simplified match syntax?
 - sort filter: make smarter? natural sort?
 - Some kind of cache to better handle multiple invocations
+- Post update/check hook script? make it possible to run go get, update hashes etc?
 - HTTP service to run pipelines?
