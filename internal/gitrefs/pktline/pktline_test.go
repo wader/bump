@@ -1,8 +1,10 @@
-package pktline
+package pktline_test
 
 import (
 	"bytes"
 	"testing"
+
+	"github.com/wader/bump/internal/gitrefs/pktline"
 )
 
 func Test(t *testing.T) {
@@ -38,7 +40,7 @@ func Test(t *testing.T) {
 	for _, tC := range testCases {
 		tC := tC
 		t.Run(tC.line, func(t *testing.T) {
-			actualLine, err := Read(bytes.NewReader(tC.pktLine))
+			actualLine, err := pktline.Read(bytes.NewReader(tC.pktLine))
 			if err != nil {
 				t.Error(err)
 			} else if tC.line != actualLine {
@@ -46,7 +48,7 @@ func Test(t *testing.T) {
 			}
 
 			b := &bytes.Buffer{}
-			_, err = Write(b, tC.line)
+			_, err = pktline.Write(b, tC.line)
 			if err != nil {
 				t.Error(err)
 			} else if bytes.Compare(tC.pktLine, b.Bytes()) != 0 {

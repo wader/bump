@@ -61,6 +61,7 @@ func refName(s string) string {
 	return s[0:n]
 }
 
+// GITProtocol talk native git protocol
 // 000eversion 1
 // 00887217a7c7e582c46cec22a130adf4b9d7d950fba0 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow no-progress include-tag
 // 00441d3fcd5ced445d1abc402225c0b8a1299641f497 refs/heads/integration
@@ -69,7 +70,7 @@ func refName(s string) string {
 // 003c525128480b96c89e6418b1e40909bf6c5b2d580f refs/tags/v1.0
 // 003fe92df48743b7bc7d26bcaabfddde0a1e20cae47c refs/tags/v1.0^{}
 // 0000
-func gitProtocol(u *url.URL, rw io.ReadWriter) ([]Ref, error) {
+func GITProtocol(u *url.URL, rw io.ReadWriter) ([]Ref, error) {
 	_, err := pktline.Write(rw, fmt.Sprintf("git-upload-pack %s\x00host=%s\x00\x00version=1\x00", u.Path, u.Host))
 	if err != nil {
 		return nil, err
@@ -103,6 +104,7 @@ func gitProtocol(u *url.URL, rw io.ReadWriter) ([]Ref, error) {
 	return refs, nil
 }
 
+// HTTPSmartProtocol talk git HTTP protocol
 // 001e# service=git-upload-pack\n
 // 0000
 // 004895dcfa3633004da0049d3d0fa03f80589cbcaf31 refs/heads/maint\0multi_ack\n
@@ -110,7 +112,7 @@ func gitProtocol(u *url.URL, rw io.ReadWriter) ([]Ref, error) {
 // 003c2cb58b79488a98d2721cea644875a8dd0026b115 refs/tags/v1.0\n
 // 003fa3c2e2402b99163d1d59756e5f207ae21cccba4c refs/tags/v1.0^{}\n
 // 0000
-func httpSmartProtocol(r io.Reader) ([]Ref, error) {
+func HTTPSmartProtocol(r io.Reader) ([]Ref, error) {
 	// read "# service=git-upload-pack" line
 	_, err := pktline.Read(r)
 	if err != nil {
@@ -150,11 +152,12 @@ func httpSmartProtocol(r io.Reader) ([]Ref, error) {
 	return refs, nil
 }
 
+// HTTPDumbProtocol talk git dump HTTP protocol
 // 95dcfa3633004da0049d3d0fa03f80589cbcaf31\trefs/heads/maint\n
 // d049f6c27a2244e12041955e262a404c7faba355\trefs/heads/master\n
 // 2cb58b79488a98d2721cea644875a8dd0026b115\trefs/tags/v1.0\n
 // a3c2e2402b99163d1d59756e5f207ae21cccba4c\trefs/tags/v1.0^{}\n
-func httpDumbProtocol(r io.Reader) ([]Ref, error) {
+func HTTPDumbProtocol(r io.Reader) ([]Ref, error) {
 	scanner := bufio.NewScanner(r)
 
 	var refs []Ref
@@ -199,9 +202,9 @@ func (h HTTPProto) Refs(u *url.URL) ([]Ref, error) {
 	}
 	defer r.Body.Close()
 	if r.Header.Get("Content-Type") == "application/x-git-upload-pack-advertisement" {
-		return httpSmartProtocol(r.Body)
+		return HTTPSmartProtocol(r.Body)
 	}
-	return httpDumbProtocol(r.Body)
+	return HTTPDumbProtocol(r.Body)
 }
 
 // GitProto implements gits own protocol
@@ -222,7 +225,7 @@ func (GitProto) Refs(u *url.URL) ([]Ref, error) {
 		return nil, err
 	}
 	defer n.Close()
-	return gitProtocol(u, n)
+	return GITProtocol(u, n)
 }
 
 func readSymref(gitPath string, p string) (string, error) {

@@ -1,4 +1,4 @@
-package gitrefs
+package gitrefs_test
 
 import (
 	"bufio"
@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/wader/bump/internal/gitrefs"
 )
 
 func TestLocalRepo(t *testing.T) {
@@ -32,8 +34,8 @@ func TestLocalRepo(t *testing.T) {
 
 	runOrFatal("git", "init", ".")
 
-	actualRefs, err := Refs("file://"+tempDir, AllProtos)
-	expectedRefs := []Ref{{Name: "HEAD", ObjID: "refs/heads/master"}}
+	actualRefs, err := gitrefs.Refs("file://"+tempDir, gitrefs.AllProtos)
+	expectedRefs := []gitrefs.Ref{{Name: "HEAD", ObjID: "refs/heads/master"}}
 	if !reflect.DeepEqual(expectedRefs, actualRefs) {
 		t.Errorf("expected %v got %v", expectedRefs, actualRefs)
 	}
@@ -43,8 +45,8 @@ func TestLocalRepo(t *testing.T) {
 	runOrFatal("git", "commit", "--allow-empty", "--author", "test <test@test>", "--message", "test")
 	sha := strings.TrimSpace(runOrFatal("git", "rev-parse", "HEAD"))
 
-	actualRefs, err = Refs("file://"+tempDir, AllProtos)
-	expectedRefs = []Ref{
+	actualRefs, err = gitrefs.Refs("file://"+tempDir, gitrefs.AllProtos)
+	expectedRefs = []gitrefs.Ref{
 		{Name: "HEAD", ObjID: sha},
 		{Name: "refs/heads/master", ObjID: sha},
 	}
@@ -66,7 +68,7 @@ func TestRemoteRepos(t *testing.T) {
 		t.Run(rawurl, func(t *testing.T) {
 			rawurl := rawurl
 			t.Parallel()
-			refs, err := Refs(rawurl, AllProtos)
+			refs, err := gitrefs.Refs(rawurl, gitrefs.AllProtos)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -100,13 +102,13 @@ func TestGitProtocol(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualRefs, err := gitProtocol(u, rw)
+	actualRefs, err := gitrefs.GITProtocol(u, rw)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w.Flush()
 
-	expectedRefs := []Ref{
+	expectedRefs := []gitrefs.Ref{
 		{Name: "HEAD", ObjID: "7217a7c7e582c46cec22a130adf4b9d7d950fba0"},
 		{Name: "refs/heads/integration", ObjID: "1d3fcd5ced445d1abc402225c0b8a1299641f497"},
 		{Name: "refs/heads/master", ObjID: "7217a7c7e582c46cec22a130adf4b9d7d950fba0"},
@@ -136,12 +138,12 @@ func TestHTTPSmartProtocol(t *testing.T) {
 0000
 `))
 
-	actualRefs, err := httpSmartProtocol(r)
+	actualRefs, err := gitrefs.HTTPSmartProtocol(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedRefs := []Ref{
+	expectedRefs := []gitrefs.Ref{
 		{Name: "refs/heads/maint", ObjID: "95dcfa3633004da0049d3d0fa03f80589cbcaf31"},
 		{Name: "refs/heads/master", ObjID: "d049f6c27a2244e12041955e262a404c7faba355"},
 		{Name: "refs/tags/v1.0", ObjID: "2cb58b79488a98d2721cea644875a8dd0026b115"},
@@ -161,12 +163,12 @@ d049f6c27a2244e12041955e262a404c7faba355	refs/heads/master
 a3c2e2402b99163d1d59756e5f207ae21cccba4c	refs/tags/v1.0^{}
 `))
 
-	actualRefs, err := httpDumbProtocol(r)
+	actualRefs, err := gitrefs.HTTPDumbProtocol(r)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedRefs := []Ref{
+	expectedRefs := []gitrefs.Ref{
 		{Name: "refs/heads/maint", ObjID: "95dcfa3633004da0049d3d0fa03f80589cbcaf31"},
 		{Name: "refs/heads/master", ObjID: "d049f6c27a2244e12041955e262a404c7faba355"},
 		{Name: "refs/tags/v1.0", ObjID: "2cb58b79488a98d2721cea644875a8dd0026b115"},
@@ -186,7 +188,7 @@ func (r roundTripFunc) RoundTrip(req *http.Request) (resp *http.Response, err er
 
 func TestHTTPClient(t *testing.T) {
 	roundTripCalled := false
-	hp := &HTTPProto{Client: &http.Client{
+	hp := &gitrefs.HTTPProto{Client: &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (resp *http.Response, err error) {
 			roundTripCalled = true
 			return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(&bytes.Buffer{})}, nil

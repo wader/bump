@@ -1,8 +1,10 @@
-package locline
+package locline_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/wader/bump/internal/locline"
 )
 
 func TestLine(t *testing.T) {
@@ -59,7 +61,7 @@ func TestLine(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			ll := New([]byte(tC.text))
+			ll := locline.New([]byte(tC.text))
 
 			var actual []int
 			for i := 0; i < len(tC.text); i++ {
@@ -74,7 +76,7 @@ func TestLine(t *testing.T) {
 }
 
 func TestOutOfBounds(t *testing.T) {
-	ll := New([]byte("a"))
+	ll := locline.New([]byte("a"))
 	if ll.Line(1) != -1 {
 		t.Error("expected 1 to be outside lines")
 	}

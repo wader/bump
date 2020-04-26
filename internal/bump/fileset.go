@@ -1,3 +1,5 @@
+// testing is currently done thru cli tests
+
 package bump
 
 import (

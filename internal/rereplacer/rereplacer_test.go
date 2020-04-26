@@ -1,41 +1,43 @@
-package rereplacer
+package rereplacer_test
 
 import (
 	"bytes"
 	"regexp"
 	"testing"
+
+	"github.com/wader/bump/internal/rereplacer"
 )
 
 func TestReplace(t *testing.T) {
 	testCases := []struct {
 		s        []byte
-		replacer []Replace
+		replacer []rereplacer.Replace
 		expected []byte
 	}{
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return b[sm[0]:sm[1]] }, Re: regexp.MustCompile(`.*`)},
 			},
 			expected: []byte(`abc`),
 		},
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return b[sm[2]:sm[3]] }, Re: regexp.MustCompile(`.*(b).*`)},
 			},
 			expected: []byte(`b`),
 		},
 		{
 			s: []byte(`abcde`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return b[sm[2]:sm[5]] }, Re: regexp.MustCompile(`a(b)c(d)e`)},
 			},
 			expected: []byte(`bcd`),
 		},
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("1a1") }, Re: regexp.MustCompile(`a`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("2b2") }, Re: regexp.MustCompile(`b`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("3c3") }, Re: regexp.MustCompile(`c`)},
@@ -44,7 +46,7 @@ func TestReplace(t *testing.T) {
 		},
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("1bc") }, Re: regexp.MustCompile(`abc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("a2c") }, Re: regexp.MustCompile(`abc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("ab3") }, Re: regexp.MustCompile(`abc`)},
@@ -53,7 +55,7 @@ func TestReplace(t *testing.T) {
 		},
 		{
 			s: []byte(`aabbcc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("aabb33") }, Re: regexp.MustCompile(`aabbcc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("aa22cc") }, Re: regexp.MustCompile(`aabbcc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("11bbcc") }, Re: regexp.MustCompile(`aabbcc`)},
@@ -62,14 +64,14 @@ func TestReplace(t *testing.T) {
 		},
 		{
 			s: []byte(`aabaa`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("aba") }, Re: regexp.MustCompile(`aabaa`)},
 			},
 			expected: []byte(`aba`),
 		},
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("1") }, Re: regexp.MustCompile(`ab`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("2") }, Re: regexp.MustCompile(`bc`)},
 			},
@@ -77,7 +79,7 @@ func TestReplace(t *testing.T) {
 		},
 		{
 			s: []byte(`abc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("2") }, Re: regexp.MustCompile(`bc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("1") }, Re: regexp.MustCompile(`ab`)},
 			},
@@ -85,7 +87,7 @@ func TestReplace(t *testing.T) {
 		},
 		{
 			s: []byte(`aabbcc`),
-			replacer: []Replace{
+			replacer: []rereplacer.Replace{
 				{Fn: func(b []byte, sm []int) []byte { return []byte("aab333") }, Re: regexp.MustCompile(`aabbcc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("aa22cc") }, Re: regexp.MustCompile(`aabbcc`)},
 				{Fn: func(b []byte, sm []int) []byte { return []byte("111bcc") }, Re: regexp.MustCompile(`aabbcc`)},
@@ -95,7 +97,7 @@ func TestReplace(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(string(tC.s)+" -> "+string(tC.expected), func(t *testing.T) {
-			r := Replacer(tC.replacer)
+			r := rereplacer.Replacer(tC.replacer)
 			actual := r.Replace(tC.s)
 			if bytes.Compare(tC.expected, actual) != 0 {
 				t.Errorf("expected %q got %q", string(tC.expected), string(actual))

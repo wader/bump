@@ -1,8 +1,12 @@
-package github
+package github_test
 
-import "testing"
+import (
+	"testing"
 
-func createGetEnvFn(env map[string]string) getenvFn {
+	"github.com/wader/bump/internal/github"
+)
+
+func createGetEnvFn(env map[string]string) github.GetenvFn {
 	return func(name string) string {
 		return env[name]
 	}
@@ -15,7 +19,7 @@ func expect(t *testing.T, actual, expected string) {
 }
 
 func TestNewActionEnv(t *testing.T) {
-	ae, err := NewActionEnv(createGetEnvFn(map[string]string{
+	ae, err := github.NewActionEnv(createGetEnvFn(map[string]string{
 		"GITHUB_TOKEN":      "token",
 		"GITHUB_WORKFLOW":   "workflow",
 		"GITHUB_ACTION":     "action",

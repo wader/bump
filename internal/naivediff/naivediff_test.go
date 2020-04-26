@@ -1,4 +1,4 @@
-package naivediff
+package naivediff_test
 
 import (
 	"bytes"
@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/wader/bump/internal/naivediff"
 )
 
 func TestDiff(t *testing.T) {
@@ -208,7 +210,7 @@ func TestDiff(t *testing.T) {
 			diffBuf, _ := c.Output()
 			realDiff := strings.Join(strings.Split(string(diffBuf), "\n")[2:], "\n")
 
-			actual := Diff(tC.a, tC.b, tC.context)
+			actual := naivediff.Diff(tC.a, tC.b, tC.context)
 			if actual != tC.expected {
 				t.Errorf("got:\n'%s', expected:\n'%s'", actual, tC.expected)
 			}
@@ -225,5 +227,5 @@ func TestPanicOnDifferentNumberOfLines(t *testing.T) {
 			t.Error("expected panic")
 		}
 	}()
-	Diff("\n", "", 2)
+	naivediff.Diff("\n", "", 2)
 }

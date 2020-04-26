@@ -1,4 +1,4 @@
-package github
+package github_test
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/wader/bump/internal/github"
 )
 
 // TODO: better tests?
@@ -39,7 +41,7 @@ func responseClient(fn func(*http.Request) (interface{}, int)) *http.Client {
 
 func TestHeaders(t *testing.T) {
 	gotCalled := false
-	c := &Client{
+	c := &github.Client{
 		Token:   "abc",
 		Version: "test",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
@@ -71,19 +73,19 @@ func TestHeaders(t *testing.T) {
 			return nil, 200
 		}),
 	}
-	c.NewRepoRef("user/repo").CreatePullRequest(NewPullRequest{})
+	c.NewRepoRef("user/repo").CreatePullRequest(github.NewPullRequest{})
 	if !gotCalled {
 		t.Error("did not get called")
 	}
 }
 
 func TestListPullRequest(t *testing.T) {
-	expectedPRs := []PullRequest{
+	expectedPRs := []github.PullRequest{
 		{ID: 123, Number: 1, Title: "PR title 1"},
 		{ID: 456, Number: 2, Title: "PR title 2"},
 	}
 
-	c := &Client{
+	c := &github.Client{
 		Token: "abc",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
 			type c struct {
@@ -121,30 +123,30 @@ func TestListPullRequest(t *testing.T) {
 }
 
 func TestCreatePullRequest(t *testing.T) {
-	expectedNewPR := NewPullRequest{
+	expectedNewPR := github.NewPullRequest{
 		Title:               "a",
 		Head:                "b",
 		Base:                "c",
-		Body:                StrR("d"),
-		MaintainerCanModify: BoolR(true),
-		Draft:               BoolR(true),
+		Body:                github.StrR("d"),
+		MaintainerCanModify: github.BoolR(true),
+		Draft:               github.BoolR(true),
 	}
-	expectedPR := PullRequest{
+	expectedPR := github.PullRequest{
 		Title:               "a",
-		Head:                Ref{Ref: "b"},
-		Base:                Ref{Ref: "c"},
+		Head:                github.Ref{Ref: "b"},
+		Base:                github.Ref{Ref: "c"},
 		Body:                "d",
 		MaintainerCanModify: true,
 		Draft:               true,
 	}
 
-	c := &Client{
+	c := &github.Client{
 		Token: "abc",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
 			type r struct {
 				Method string
 				Path   string
-				NewPR  NewPullRequest
+				NewPR  github.NewPullRequest
 			}
 			expectedR := r{
 				Method: "POST",
@@ -176,29 +178,29 @@ func TestCreatePullRequest(t *testing.T) {
 }
 
 func TestUpdatePullRequest(t *testing.T) {
-	expectedUpdatePR := UpdatePullRequest{
-		Title:               StrR("a"),
-		Base:                StrR("c"),
-		Body:                StrR("d"),
-		State:               StrR("closed"),
-		MaintainerCanModify: BoolR(true),
+	expectedUpdatePR := github.UpdatePullRequest{
+		Title:               github.StrR("a"),
+		Base:                github.StrR("c"),
+		Body:                github.StrR("d"),
+		State:               github.StrR("closed"),
+		MaintainerCanModify: github.BoolR(true),
 	}
-	expectedPR := PullRequest{
+	expectedPR := github.PullRequest{
 		Title:               "a",
-		Head:                Ref{Ref: "b"},
-		Base:                Ref{Ref: "c"},
+		Head:                github.Ref{Ref: "b"},
+		Base:                github.Ref{Ref: "c"},
 		Body:                "d",
 		MaintainerCanModify: true,
 		Draft:               true,
 	}
 
-	c := &Client{
+	c := &github.Client{
 		Token: "abc",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
 			type r struct {
 				Method   string
 				Path     string
-				UpdatePR UpdatePullRequest
+				UpdatePR github.UpdatePullRequest
 			}
 			expectedR := r{
 				Method:   "PATCH",
@@ -230,20 +232,20 @@ func TestUpdatePullRequest(t *testing.T) {
 }
 
 func TestCreateComment(t *testing.T) {
-	expectedNewComment := NewComment{
+	expectedNewComment := github.NewComment{
 		Body: "a",
 	}
-	expectedComment := Comment{
+	expectedComment := github.Comment{
 		Body: "a",
 	}
 
-	c := &Client{
+	c := &github.Client{
 		Token: "abc",
 		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
 			type r struct {
 				Method     string
 				Path       string
-				NewComment NewComment
+				NewComment github.NewComment
 			}
 			expectedR := r{
 				Method:     "POST",
@@ -334,7 +336,7 @@ func TestIsValidBranchName(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.s, func(t *testing.T) {
-			actual := IsValidBranchName(tC.s)
+			actual := github.IsValidBranchName(tC.s)
 			expected := tC.e
 
 			if expected == "" {

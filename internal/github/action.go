@@ -5,12 +5,13 @@ import (
 	"strings"
 )
 
-type getenvFn func(name string) string
+// GetenvFn function to return environment values
+type GetenvFn func(name string) string
 
 // ActionEnv is a GitHub action environment
 // https://help.github.com/en/articles/virtual-environments-for-github-actions#default-environment-variables
 type ActionEnv struct {
-	getenv     getenvFn
+	getenv     GetenvFn
 	Client     *Client
 	Workflow   string   // GITHUB_WORKFLOW The name of the workflow.
 	Action     string   // GITHUB_ACTION The name of the action.
@@ -29,7 +30,7 @@ type ActionEnv struct {
 }
 
 // NewActionEnv creates a new ActionEnv
-func NewActionEnv(getenv getenvFn, version string) (*ActionEnv, error) {
+func NewActionEnv(getenv GetenvFn, version string) (*ActionEnv, error) {
 	getenvOrErr := func(name string) (string, error) {
 		v := getenv(name)
 		if v == "" {
