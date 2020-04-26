@@ -1,75 +1,93 @@
-package bump
+package cli
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"strings"
 
+	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter"
 	"github.com/wader/bump/internal/filter/all"
 	"github.com/wader/bump/internal/naivediff"
 	"github.com/wader/bump/internal/pipeline"
 )
 
-// Enver is a environment the command is running in
-type Enver interface {
-	Args() []string
-	Stdout() io.Writer
-	Stderr() io.Writer
-	WriteFile(filename string, data []byte) error
-	ReadFile(filename string) ([]byte, error)
+// BumpfileName default Bumpfile name
+const BumpfileName = "Bumpfile"
+
+func flagWasPassed(flags *flag.FlagSet, name string) bool {
+	passed := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			passed = true
+		}
+	})
+	return passed
 }
 
 // Command is a command based interface to bump packages
 type Command struct {
 	Version string
-	Env     Enver
+	Env     bump.Env
 }
 
 func (cmd Command) filters() []filter.NamedFilter {
 	return all.Filters()
 }
 
-func (cmd Command) help() string {
+func (cmd Command) help(flags *flag.FlagSet) string {
 	text := `
-Usage: $argv0 [OPTIONS] COMMAND
+Usage: {{ARGV0}} [OPTIONS] COMMAND
 OPTIONS:
-  -e string             Exclude specified names (space or comma separated)
-  -i string             Include specified names (space or comma separated)
-  -v                    Verbose
+{{OPTIONS_HELP}}
 
 COMMANDS:
-  version               Show version of bump itself ($version)
-  help [FILTER]         Show help or filter help
-  list FILES...         Show bump configurations
-  current FILES...      Show current versions
-  check FILES...        Check for possible version updates
-  update FILES...       Update versions
-  diff FILES...         Show diff of what an update would change
+  version               Show version of bump itself ({{VERSION}})
+  help [FILTER]         Show help or help for a filter
+  list [FILE...]        Show bump configurations
+  current [FILE...]     Show current versions
+  check [FILE...]       Check for possible version updates
+  update [FILE...]      Update versions
+  diff [FILE...]        Show diff of what an update would change
   pipeline PIPELINE     Run a filter pipeline
 
-FILES is files with CONFIGURATION or versions to be checked or updated
+BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
+FILE is file with EMBEDCONFIG:s or versions to be checked or updated
+CONFIG is "NAME /REGEXP/ PIPELINE"
+EMBEDCONFIG is "bump: CONFIG"
 PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
-$filterhelp
-CONFIGURATION lines looks like this: bump: NAME /REGEXP/ PIPELINE
-NAME is a configuration identifier
+{{FILTER_HELP}}
+NAME is a configuration name
 REGEXP is a regexp with one submatch to find current version
 `[1:]
 
+	var optionsHelps []string
+	flags.VisitAll(func(f *flag.Flag) {
+		var ss []string
+		ss = append(ss, fmt.Sprintf("  -%-20s", f.Name))
+		ss = append(ss, f.Usage)
+		if f.DefValue != "" {
+			ss = append(ss, fmt.Sprintf("(%s)", f.DefValue))
+		}
+		optionsHelps = append(optionsHelps, strings.Join(ss, " "))
+	})
+	optionHelp := strings.Join(optionsHelps, "\n")
+
 	var filterHelps []string
 	for _, nf := range cmd.filters() {
-		parts := strings.SplitN(nf.Help, "\n\n", 3)
-		filterHelps = append(filterHelps, "  "+parts[0])
+		syntax, _, _ := filter.ParseHelp(nf.Help)
+		filterHelps = append(filterHelps, "  "+strings.Join(syntax, " | "))
 	}
-	filterhelp := strings.Join(filterHelps, "\n")
+	filterHelp := strings.Join(filterHelps, "\n")
 
 	return strings.NewReplacer(
-		"$argv0", cmd.Env.Args()[0],
-		"$version", cmd.Version,
-		"$filterhelp", filterhelp,
+		"{{ARGV0}}", cmd.Env.Args()[0],
+		"{{VERSION}}", cmd.Version,
+		"{{OPTIONS_HELP}}", optionHelp,
+		"{{FILTER_HELP}}", filterHelp,
 	).Replace(text)
 }
 
@@ -110,40 +128,53 @@ func (cmd Command) formatDiff(a, b string, patch string) string {
 
 // Run bump command
 func (cmd Command) Run() []error {
-	var verbose bool
+	errs := cmd.run()
+	for _, err := range errs {
+		fmt.Fprintln(cmd.Env.Stderr(), err)
+	}
+	return errs
+}
+
+func (cmd Command) run() []error {
+	var bumpfile = ""
+	var bumpfilePassed bool = false
 	var include = ""
 	var exclude = ""
+	var verbose bool
 
-	f := flag.NewFlagSet(cmd.Env.Args()[0], flag.ContinueOnError)
-	f.SetOutput(cmd.Env.Stderr())
-	f.Usage = func() {
-		fmt.Fprint(f.Output(), cmd.help())
+	flags := flag.NewFlagSet(cmd.Env.Args()[0], flag.ContinueOnError)
+	flags.StringVar(&bumpfile, "c", BumpfileName, "Bumpfile to read")
+	flags.StringVar(&include, "i", "", "Comma separated names to include")
+	flags.StringVar(&exclude, "e", "", "Comma separated names to exclude")
+	flags.BoolVar(&verbose, "v", false, "Verbose")
+	flags.SetOutput(cmd.Env.Stderr())
+	flags.Usage = func() {
+		fmt.Fprint(flags.Output(), cmd.help(flags))
 	}
-	f.StringVar(&include, "i", "", "Include specified names (space or comma separated)")
-	f.StringVar(&exclude, "e", "", "Exclude specified names (space or comma separated)")
-	f.BoolVar(&verbose, "v", false, "Verbose")
-	err := f.Parse(cmd.Env.Args()[1:])
+
+	err := flags.Parse(cmd.Env.Args()[1:])
 	if err == flag.ErrHelp {
-		f.Usage()
+		flags.Usage()
 		return nil
 	} else if err != nil {
 		return []error{err}
 	}
+	bumpfilePassed = flagWasPassed(flags, "c")
 
-	if len(f.Args()) == 0 {
-		f.Usage()
+	if len(flags.Args()) == 0 {
+		flags.Usage()
 		return nil
 	}
 
-	command := f.Arg(0)
+	command := flags.Arg(0)
 
 	if command == "version" {
 		fmt.Fprintf(cmd.Env.Stdout(), "%s\n", cmd.Version)
 		return nil
 	} else if command == "help" {
-		filterName := f.Arg(1)
+		filterName := flags.Arg(1)
 		if filterName == "" {
-			f.Usage()
+			flags.Usage()
 			return nil
 		}
 		for _, nf := range cmd.filters() {
@@ -156,10 +187,10 @@ func (cmd Command) Run() []error {
 		return nil
 	}
 
-	files := f.Args()[1:]
+	files := flags.Args()[1:]
 	includes := map[string]bool{}
 	excludes := map[string]bool{}
-	var bfs *FileSet
+	var bfs *bump.FileSet
 	var errs []error
 
 	include = strings.Replace(strings.TrimSpace(include), ",", " ", -1)
@@ -177,7 +208,12 @@ func (cmd Command) Run() []error {
 
 	switch command {
 	case "list", "current", "check", "diff", "update":
-		bfs, errs = NewBumpFileSet(cmd.filters(), cmd.Env.ReadFile, files)
+
+		if bumpfilePassed && len(files) > 0 {
+			return []error{errors.New("both bumpfile and file arguments can't be specified")}
+		}
+
+		bfs, errs = bump.NewBumpFileSet(cmd.Env, cmd.filters(), bumpfile, files)
 		if errs != nil {
 			return errs
 		}
@@ -198,7 +234,7 @@ func (cmd Command) Run() []error {
 				return []error{fmt.Errorf("exclude name %q not found", n)}
 			}
 		}
-		bfs.SkipCheckFn = func(c *Check) bool {
+		bfs.SkipCheckFn = func(c *bump.Check) bool {
 			includeFound := true
 			if len(include) > 0 {
 				_, includeFound = includes[c.Name]
@@ -278,7 +314,7 @@ func (cmd Command) Run() []error {
 
 		var diffs []string
 		for _, f := range bfs.Files {
-			newTextBuf := bfs.Replace(f.Text)
+			newTextBuf := bfs.Replace(f)
 			if bytes.Compare(f.Text, newTextBuf) == 0 {
 				continue
 			}
@@ -318,7 +354,7 @@ func (cmd Command) Run() []error {
 			}
 		}
 	case "pipeline":
-		plStr := f.Arg(1)
+		plStr := flags.Arg(1)
 		pl, err := pipeline.New(cmd.filters(), plStr)
 		if err != nil {
 			return []error{err}
@@ -336,7 +372,7 @@ func (cmd Command) Run() []error {
 		}
 		fmt.Fprintf(cmd.Env.Stdout(), "%s\n", v)
 	default:
-		f.Usage()
+		flags.Usage()
 		return []error{fmt.Errorf("unknown command: %s", command)}
 	}
 

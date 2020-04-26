@@ -1,31 +1,31 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/wader/bump/internal/bump"
+	"github.com/wader/bump/internal/cli"
 	"github.com/wader/bump/internal/githubaction"
 )
 
 var version = "dev"
 
 func main() {
-	var errs []error
+	var r interface{ Run() []error }
 
 	if os.Getenv("GITHUB_ACTION") != "" {
-		errs = githubaction.Run(version)
-	} else {
-		errs = (bump.Command{
+		r = githubaction.Command{
 			Version: version,
 			Env:     bump.OSEnv{},
-		}).Run()
+		}
+	} else {
+		r = cli.Command{
+			Version: version,
+			Env:     bump.OSEnv{},
+		}
 	}
 
-	if errs != nil {
-		for _, err := range errs {
-			fmt.Fprintln(os.Stderr, err)
-		}
+	if errs := r.Run(); errs != nil {
 		os.Exit(1)
 	}
 }

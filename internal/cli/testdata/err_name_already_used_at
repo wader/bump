@@ -1,0 +1,22 @@
+/a:
+bump: name /(re)/ static:1
+bump: name /(re)/ static:1
+$ bump list a
+>stderr:
+a:2: name already used at a:1
+---
+/Bumpfile:
+name /(re)/ static:1
+name /(re)/ static:1
+$ bump list
+>stderr:
+Bumpfile:2: name already used at Bumpfile:1
+---
+/a:
+bump: name /(re)/ static:1
+/Bumpfile:
+a
+name /(re)/ static:1
+$ bump list
+>stderr:
+Bumpfile:2: name already used at a:1

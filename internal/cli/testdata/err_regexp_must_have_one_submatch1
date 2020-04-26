@@ -1,0 +1,5 @@
+/Bumpfile:
+a /r/ static:2
+$ bump update
+>stderr:
+Bumpfile:1: regexp must have one submatch: "r"

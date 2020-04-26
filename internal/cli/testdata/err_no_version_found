@@ -1,6 +1,6 @@
-### args bump update a
-### input a
+/a:
 bump: name /name: (1)/ static:
 name: 1
-### errors
+$ bump update a
+>stderr:
 a:1: name: no version found

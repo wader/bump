@@ -17,7 +17,7 @@ FROM alpine:3.9.3 AS builder
 
 # See possible updates
 $ bump check examples/Dockerfile
-alpine 3.11.2
+alpine 3.11.6
 
 # See what will be changed
 $ bump diff examples/Dockerfile
@@ -26,7 +26,7 @@ $ bump diff examples/Dockerfile
 @@ -1,2 +1,2 @@
  # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 -FROM alpine:3.9.3 AS builder
-+FROM alpine:3.11.2 AS builder
++FROM alpine:3.11.6 AS builder
 
 # Write changes
 $ bump update examples/Dockerfile
@@ -65,6 +65,8 @@ Note that if you want bump PRs to trigger other actions like CI builds
 with repo access and add it as a secret. For example
 add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
 
+See [action.yml](action.yml) for inputs.
+
 ## Install
 
 ### Docker
@@ -93,47 +95,45 @@ go get github.com/wader/bump/cmd/bump
 $ bump help
 Usage: bump [OPTIONS] COMMAND
 OPTIONS:
-  -e string             Exclude specified names (space or comma separated)
-  -i string             Include specified names (space or comma separated)
-  -v                    Verbose
+  -c                    Bumpfile to read (Bumpfile)
+  -e                    Comma separated names to exclude
+  -i                    Comma separated names to include
+  -v                    Verbose (false)
 
 COMMANDS:
   version               Show version of bump itself (dev)
-  help [FILTER]         Show help or filter help
-  list FILES...         Show bump configurations
-  current FILES...      Show current versions
-  check FILES...        Check for possible version updates
-  update FILES...       Update versions
-  diff FILES...         Show diff of what an update would change
+  help [FILTER]         Show help or help for a filter
+  list [FILE...]        Show bump configurations
+  current [FILE...]     Show current versions
+  check [FILE...]       Check for possible version updates
+  update [FILE...]      Update versions
+  diff [FILE...]        Show diff of what an update would change
   pipeline PIPELINE     Run a filter pipeline
 
-FILES is files with CONFIGURATION or versions to be checked or updated
+BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
+FILE is file with EMBEDCONFIG:s or versions to be checked or updated
+CONFIG is "NAME /REGEXP/ PIPELINE"
+EMBEDCONFIG is "bump: CONFIG"
 PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
-  git:<repo> or <repo.git>
+  git:<repo> | <repo.git>
   gitrefs:<repo>
   docker:<image>
   svn:<repo>
-  fetch:<url>, <http://> or <https://>
-  semver:<constraint>, semver:<n.n.n-pre+build>, <constraint> or <n.n.n-pre+build>
-  re:/<regexp>/, re:/<regexp>/<template>/, /<regexp>/ or /<regexp>/<template>/
+  fetch:<url> | <http://> | <https://>
+  semver:<constraint> | semver:<n.n.n-pre+build> | <constraint> | <n.n.n-pre+build>
+  re:/<regexp>/ | re:/<regexp>/<template>/ | /<regexp>/ | /<regexp>/<template>/
   sort
-  value or @
+  value | @
   static:<name[:value]>,...
   err:<error>
-CONFIGURATION lines looks like this: bump: NAME /REGEXP/ PIPELINE
-NAME is a configuration identifier
+NAME is a configuration name
 REGEXP is a regexp with one submatch to find current version
 ```
 
 ## Configuration
 
-`bump` looks for lines looking like this:
-```
-bump: NAME /REGEXP/ PIPELINE
-```
-
-`NAME` is a name of the software etc this configuration is for.
+`NAME` is a name of the configuration.
 
 `REGEXP` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
 one submatch/capture group to find the current version.
@@ -143,7 +143,43 @@ suitable version. The syntax is similar to pipes in a shell `filter|filter|...`
 where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
 
-Usually the lines will be in comments or in a separate file.
+### Bumpfile
+
+Default `bump` looks for a file named `Bumpfile` in the current directory.
+Each line is a comment, configuration or a glob pattern of files to
+read embedded configuration from.
+
+```
+# comment
+NAME /REGEXP/ PIPELINE
+glob/*
+```
+
+Example Bumpfile:
+
+```
+# a bump configuration
+alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# read configuration, check and update version in Dockerfile
+Dockerfile
+```
+
+### Embedded
+
+Embedded configuration can be used to include bump configuration inside
+files containing versions to be checked or updated.
+
+Embedded configuration looks like this:
+```
+bump: NAME /REGEXP/ PIPELINE
+```
+
+Example Dockerfile with embedded configuration:
+```
+# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+FROM alpine:3.9.3 AS builder
+```
+
 
 ## Pipeline
 
@@ -173,7 +209,7 @@ b53940e13dde81d721621b4d5296eede5795aadd
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.13.6
+1.14.2
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
@@ -208,9 +244,9 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.24.1
+2.26.2
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.24.1
+2.26.2
 ```
 
 ### gitrefs
@@ -234,7 +270,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.11.2
+3.11.6
 ```
 
 ### svn
@@ -380,7 +416,6 @@ test
 
 - GitHub action: some kind of tests
 - Proper version number for bump itself
-- Some kind of Bumpfile with config and paths to check for updates?
 - How to use with hg
 - docker filter: value should be layer hash
 - docker filter: support auth and other registries

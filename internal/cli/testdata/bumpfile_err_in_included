@@ -1,0 +1,7 @@
+/Bumpfile:
+a
+/a:
+bump: err
+$ bump list
+>stderr:
+a:1: expected \s

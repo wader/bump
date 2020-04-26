@@ -1,0 +1,11 @@
+/a:
+bump: name /name: (1)/ static:1
+$ bump list a
+>stderr:
+a:1: name has no current version matches
+---
+/Bumpfile:
+name /name: (1)/ static:1
+$ bump list
+>stderr:
+Bumpfile:1: name has no current version matches

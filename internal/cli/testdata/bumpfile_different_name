@@ -1,0 +1,8 @@
+/a:
+name: 1
+/b:
+a /name: (1)/ static:1
+a
+$ bump -c b list
+>stdout:
+a

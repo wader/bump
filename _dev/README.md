@@ -31,7 +31,7 @@ where important libraries are automatically kept up to date using the bump githu
 
 Bump can be used as a github action using the action `wader/bump@master`
 or by [providing it and referencing yourself](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/configuring-a-workflow#referencing-actions-in-your-workflow)
-Here is a workflow that will look for new versions and creates PRs once per day:
+Here is a workflow that will read `Bumpfile` and look for new versions and creates PRs once per day at 9 UTC:
 
 ```yml
 name: 'Automatic version updates'
@@ -45,11 +45,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: wader/bump@master
-        with:
-          bump_files: file1 file2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+See [action.yml](action.yml) for input arguments.
 
 Note that if you want bump PRs to trigger other actions like CI builds
 [you currently have to use a personal access token](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#about-workflow-events)
@@ -86,12 +86,7 @@ $ bump help
 
 ## Configuration
 
-`bump` looks for lines looking like this:
-```
-bump: NAME /REGEXP/ PIPELINE
-```
-
-`NAME` is a name of the software etc this configuration is for.
+`NAME` is a name of the configuration.
 
 `REGEXP` is a [golang regexp](https://golang.org/pkg/regexp/syntax/) with
 one submatch/capture group to find the current version.
@@ -101,7 +96,43 @@ suitable version. The syntax is similar to pipes in a shell `filter|filter|...`
 where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
 
-Usually the lines will be in comments or in a separate file.
+### Bumpfile
+
+Default `bump` looks for a file named `Bumpfile` in the current directory.
+Each line is a comment, configuration or a glob pattern of files to
+read embedded configuration from.
+
+```
+# comment
+NAME /REGEXP/ PIPELINE
+glob/*
+```
+
+Example Bumpfile:
+
+```
+# a bump configuration
+alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# read configuration, check and update version in Dockerfile
+Dockerfile
+```
+
+### Embedded
+
+Embedded configuration can be used to include bump configuration inside
+files containing versions to be checked or updated.
+
+Embedded configuration looks like this:
+```
+bump: NAME /REGEXP/ PIPELINE
+```
+
+Example Dockerfile with embedded configuration:
+```
+# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+FROM alpine:3.9.3 AS builder
+```
+
 
 ## Pipeline
 
@@ -145,7 +176,6 @@ produces versions, `re` and `semver` transforms and filters.
 
 - GitHub action: some kind of tests
 - Proper version number for bump itself
-- Some kind of Bumpfile with config and paths to check for updates?
 - How to use with hg
 - docker filter: value should be layer hash
 - docker filter: support auth and other registries

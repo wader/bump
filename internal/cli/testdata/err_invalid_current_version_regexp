@@ -1,0 +1,5 @@
+/Bumpfile:
+name /(/ static:1
+$ bump update
+>stderr:
+Bumpfile:1: invalid current version regexp: "("

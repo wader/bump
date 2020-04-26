@@ -45,9 +45,24 @@ func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
 	}
 }
 
+// Command is a github action interface to bump packages
+type Command struct {
+	Version string
+	Env     bump.Env
+}
+
 // Run bump in a github action environment
-func Run(version string) []error {
-	ae, err := github.NewActionEnv(os.Getenv, version)
+func (cmd Command) Run() []error {
+	errs := cmd.run()
+	for _, err := range errs {
+		fmt.Fprintln(cmd.Env.Stderr(), err)
+	}
+
+	return errs
+}
+
+func (cmd Command) run() []error {
+	ae, err := github.NewActionEnv(os.Getenv, cmd.Version)
 	if err != nil {
 		return []error{err}
 	}
@@ -62,10 +77,11 @@ func Run(version string) []error {
 		return []error{fmt.Errorf("GITHUB_SHA not set")}
 	}
 
-	bumpFiles, err := ae.Input("bump_files")
+	bumpfile, err := ae.Input("bumpfile")
 	if err != nil {
 		return []error{err}
 	}
+	files, _ := ae.Input("bump_files")
 	titleTemplate, err := ae.Input("title_template")
 	if err != nil {
 		return []error{err}
@@ -94,8 +110,8 @@ func Run(version string) []error {
 	}
 
 	// TODO: whitespace in filenames
-	bumpFilesParts := strings.Fields(bumpFiles)
-	bfs, errs := bump.NewBumpFileSet(all.Filters(), ioutil.ReadFile, bumpFilesParts)
+	filesParts := strings.Fields(files)
+	bfs, errs := bump.NewBumpFileSet(cmd.Env, all.Filters(), bumpfile, filesParts)
 	if errs != nil {
 		return errs
 	}
@@ -150,7 +166,7 @@ func Run(version string) []error {
 		}
 
 		for _, f := range bfs.Files {
-			newTextBuf := bfs.Replace(f.Text)
+			newTextBuf := bfs.Replace(f)
 			if bytes.Compare(f.Text, newTextBuf) == 0 {
 				continue
 			}

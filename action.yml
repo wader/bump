@@ -6,9 +6,14 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
 inputs:
-  bump_files:
-    description: 'Files with config or versions to update'
-    required: true
+  bumpfile:
+    description: 'Bumpfile to read'
+    required: false
+    default: 'Bumpfile'
+  files:
+    description: 'Files with embedded configuration or versions to update'
+    required: False
+    default: ''
   title_template:
     description: 'Commit and pull request title template'
     required: false

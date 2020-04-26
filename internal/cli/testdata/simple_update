@@ -1,0 +1,16 @@
+/a:
+bump: name /name: (1)/ static:2
+name: 1
+$ bump update a
+/a:
+bump: name /name: (1)/ static:2
+name: 2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+a
+/a:
+name: 1
+$ bump update
+/a:
+name: 2

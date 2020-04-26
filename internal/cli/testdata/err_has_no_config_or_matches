@@ -1,0 +1,9 @@
+/a:
+$ bump update a
+>stderr:
+a: has no configuration or current version matches
+---
+/Bumpfile:
+$ bump update
+>stderr:
+Bumpfile: has no configuration

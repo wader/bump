@@ -59,10 +59,11 @@ type FileSet struct {
 
 // File is file with config or versions
 type File struct {
-	Name        string
-	Text        []byte
-	HasChecks   bool
-	HasCurrents bool
+	Name          string
+	Text          []byte
+	HasConfig     bool
+	HasCurrents   bool
+	HasNoVersions bool // for Bumpfile
 }
 
 func rangeOverlap(x1, x2, y1, y2 int) bool {
@@ -71,27 +72,25 @@ func rangeOverlap(x1, x2, y1, y2 int) bool {
 
 // NewBumpFileSet creates a new BumpFileSet
 func NewBumpFileSet(
+	env Env,
 	filters []filter.NamedFilter,
-	readFile func(filename string) ([]byte, error),
+	bumpfile string,
 	filenames []string) (*FileSet, []error) {
-	if len(filenames) == 0 {
-		return nil, []error{fmt.Errorf("no files")}
-	}
 
 	b := &FileSet{
 		Filters: filters,
 	}
 
-	for _, f := range filenames {
-		text, err := readFile(f)
-		if err != nil {
+	if len(filenames) > 0 {
+		for _, f := range filenames {
+			if err := b.addFile(env, f); err != nil {
+				return nil, []error{err}
+			}
+		}
+	} else {
+		if err := b.addBumpfile(env, bumpfile); err != nil {
 			return nil, []error{err}
 		}
-
-		if err := b.addFile(File{Name: f, Text: text}); err != nil {
-			return nil, []error{err}
-		}
-
 	}
 
 	b.findCurrent()
@@ -103,14 +102,63 @@ func NewBumpFileSet(
 	return b, nil
 }
 
-func (b *FileSet) addFile(file File) error {
-	checks, err := parse(&file, b.Filters)
+func (b *FileSet) addBumpfile(env Env, name string) error {
+	text, err := env.ReadFile(name)
+	if err != nil {
+		return err
+	}
+	file := &File{Name: name, Text: text, HasNoVersions: true}
+
+	lineNr := 0
+	var checks []*Check
+	for _, l := range strings.Split(string(text), "\n") {
+		lineNr++
+		if strings.HasPrefix(l, "#") || strings.TrimSpace(l) == "" {
+			continue
+		}
+
+		file.HasConfig = true
+
+		matches, _ := env.Glob(l)
+		if len(matches) > 0 {
+			for _, m := range matches {
+				if err := b.addFile(env, m); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
+		check, err := parseCheckLine(l, b.Filters)
+		if err != nil {
+			return fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
+		}
+		check.File = file
+		check.LineNr = lineNr
+		checks = append(checks, check)
+	}
+
+	return b.addChecks(file, checks)
+}
+
+func (b *FileSet) addFile(env Env, name string) error {
+	text, err := env.ReadFile(name)
+	if err != nil {
+		return err
+	}
+	file := &File{Name: name, Text: text}
+
+	checks, err := parseFile(file, b.Filters)
 	if err != nil {
 		return err
 	}
 
+	return b.addChecks(file, checks)
+}
+
+func (b *FileSet) addChecks(file *File, checks []*Check) error {
 	for _, c := range checks {
-		file.HasChecks = true
+		file.HasConfig = true
 
 		for _, bc := range b.Checks {
 			if c.Name == bc.Name {
@@ -121,7 +169,7 @@ func (b *FileSet) addFile(file File) error {
 		b.Checks = append(b.Checks, c)
 	}
 
-	b.Files = append(b.Files, &file)
+	b.Files = append(b.Files, file)
 
 	return nil
 }
@@ -184,6 +232,10 @@ func (b *FileSet) Latest() []error {
 func (b *FileSet) findCurrent() {
 	for _, c := range b.SelectedChecks() {
 		for _, f := range b.Files {
+			if f.HasNoVersions {
+				continue
+			}
+
 			locLine := locline.New(f.Text)
 			checkLineSet := map[int]bool{}
 			for _, sm := range bumpRe.FindAllSubmatchIndex(f.Text, -1) {
@@ -223,10 +275,17 @@ func (b *FileSet) Lint() []error {
 	}
 
 	for _, f := range b.Files {
-		if f.HasChecks || f.HasCurrents {
-			continue
+		if f.HasNoVersions {
+			if f.HasConfig {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("%s: has no configuration", f.Name))
+		} else {
+			if f.HasConfig || f.HasCurrents {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("%s: has no configuration or current version matches", f.Name))
 		}
-		errs = append(errs, fmt.Errorf("%s: has no config or current matches", f.Name))
 	}
 
 	for _, ca := range b.Checks {
@@ -255,10 +314,14 @@ func (b *FileSet) Lint() []error {
 }
 
 // Replace current with latest versions in text
-func (b *FileSet) Replace(text []byte) []byte {
-	locLine := locline.New(text)
+func (b *FileSet) Replace(file *File) []byte {
+	if file.HasNoVersions {
+		return file.Text
+	}
+
+	locLine := locline.New(file.Text)
 	checkLineSet := map[int]bool{}
-	for _, sm := range bumpRe.FindAllSubmatchIndex(text, -1) {
+	for _, sm := range bumpRe.FindAllSubmatchIndex(file.Text, -1) {
 		lineNr := locLine.Line(sm[0])
 		checkLineSet[lineNr] = true
 	}
@@ -285,17 +348,17 @@ func (b *FileSet) Replace(text []byte) []byte {
 		})
 	}
 
-	return rereplacer.Replacer(replacers).Replace(text)
+	return rereplacer.Replacer(replacers).Replace(file.Text)
 }
 
-func parse(file *File, filters []filter.NamedFilter) ([]*Check, error) {
+func parseFile(file *File, filters []filter.NamedFilter) ([]*Check, error) {
 	var checks []*Check
 	locLine := locline.New(file.Text)
 
 	for _, sm := range bumpRe.FindAllSubmatchIndex(file.Text, -1) {
 		lineNr := locLine.Line(sm[0])
 		checkLine := strings.TrimSpace(string(file.Text[sm[2]:sm[3]]))
-		check, err := parseCheckLine(checkLine, filters, lineNr)
+		check, err := parseCheckLine(checkLine, filters)
 		if err != nil {
 			return nil, fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
 		}
@@ -308,7 +371,7 @@ func parse(file *File, filters []filter.NamedFilter) ([]*Check, error) {
 	return checks, nil
 }
 
-func parseCheckLine(line string, filters []filter.NamedFilter, lineNr int) (*Check, error) {
+func parseCheckLine(line string, filters []filter.NamedFilter) (*Check, error) {
 	var name,
 		currentReStr,
 		pipelineStr string

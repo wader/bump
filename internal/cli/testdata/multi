@@ -1,0 +1,7 @@
+/a:
+bump: name /name: (1)/ static:2
+/b:
+name: 1
+$ bump update a b
+/b:
+name: 2

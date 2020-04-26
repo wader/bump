@@ -1,8 +1,0 @@
-### args bump update a
-### input a
-bump: name1 /name: (1)/ static:2
-bump: name2 /name: (1)/ static:2
-name: 1
-### errors
-a:1:name1 has overlapping matches with a:2:name2 at a:3
-a:2:name2 has overlapping matches with a:1:name1 at a:3

@@ -1,0 +1,5 @@
+/Bumpfile:
+name /name: (1)/ @|static:2:b
+$ bump update
+>stderr:
+Bumpfile:1: @|static:2:b: value filter must be last

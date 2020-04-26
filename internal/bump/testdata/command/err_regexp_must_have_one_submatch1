@@ -1,6 +1,0 @@
-### args bump update a
-### input a
-bump: a /r/ static:2
-name: 1
-### errors
-a:1: regexp must have one submatch: "r"

@@ -1,0 +1,14 @@
+/Bumpfile:
+name /name: (1)/ static:2
+a*
+a*/b*
+# name: 1
+/aaa:
+name: 1
+/aaa/bbb:
+name: 1
+$ bump update
+/aaa:
+name: 2
+/aaa/bbb:
+name: 2

@@ -1,0 +1,24 @@
+/a:
+bump: name /name: (1)/ static:2
+name: 1
+$ bump diff a
+>stdout:
+--- a
++++ a
+@@ -1,2 +1,2 @@
+ bump: name /name: (1)/ static:2
+-name: 1
++name: 2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+a
+/a:
+name: 1
+$ bump diff
+>stdout:
+--- a
++++ a
+@@ -1 +1 @@
+-name: 1
++name: 2

@@ -1,6 +1,0 @@
-### args bump current a
-### input a
-bump: name /name: (1)/ static:2
-name: 1
-### stdout
-a:2: name 1

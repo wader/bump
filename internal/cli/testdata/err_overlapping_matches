@@ -1,0 +1,8 @@
+/a:
+bump: name1 /name: (1)/ static:1
+bump: name2 /name: (1)/ static:1
+name: 1
+$ bump update a
+>stderr:
+a:1:name1 has overlapping matches with a:2:name2 at a:3
+a:2:name2 has overlapping matches with a:1:name1 at a:3

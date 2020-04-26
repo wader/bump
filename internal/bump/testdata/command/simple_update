@@ -1,7 +1,0 @@
-### args bump update a
-### input a
-bump: name /name: (1)/ static:2
-name: 1
-### expected a
-bump: name /name: (1)/ static:2
-name: 2

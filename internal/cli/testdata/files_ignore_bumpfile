@@ -1,0 +1,8 @@
+/a:
+bump: a /name: (1)/ static:1
+name: 1
+/Bumpfile:
+b /(re)/ static:1
+$ bump list a
+>stdout:
+a

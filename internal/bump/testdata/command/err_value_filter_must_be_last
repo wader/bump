@@ -1,6 +1,0 @@
-### args bump update a
-### input a
-bump: name /name: (1)/ @|static:2:b
-name: 1
-### errors
-a:1: @|static:2:b: value filter must be last
