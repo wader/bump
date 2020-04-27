@@ -116,7 +116,7 @@ func (cmd Command) run() []error {
 		return errs
 	}
 
-	errs = bfs.Latest()
+	errs = bfs.Latest(nil)
 	if errs != nil {
 		return errs
 	}

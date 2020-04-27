@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/wader/bump/internal/filter"
 	"github.com/wader/bump/internal/lexer"
@@ -194,11 +195,12 @@ func (b *FileSet) SelectedChecks() []*Check {
 }
 
 // Latest run all pipelines to populate latest versions
-func (b *FileSet) Latest() []error {
+func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Duration)) []error {
 	type result struct {
-		i      int
-		latest string
-		err    error
+		i        int
+		latest   string
+		err      error
+		duration time.Duration
 	}
 
 	selectedChecks := b.SelectedChecks()
@@ -209,8 +211,9 @@ func (b *FileSet) Latest() []error {
 	for i, c := range selectedChecks {
 		go func(i int, c *Check) {
 			defer wg.Done()
+			start := time.Now()
 			v, err := c.Pipeline.Value(nil)
-			resultCh <- result{i: i, latest: v, err: err}
+			resultCh <- result{i: i, latest: v, err: err, duration: time.Now().Sub(start)}
 		}(i, c)
 	}
 
@@ -225,6 +228,10 @@ func (b *FileSet) Latest() []error {
 		c.Latest = r.latest
 		if r.err != nil {
 			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.LineNr, c.Name, r.err))
+		}
+
+		if resultFn != nil {
+			resultFn(c, r.err, r.duration)
 		}
 	}
 

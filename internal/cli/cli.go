@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter"
@@ -280,7 +282,23 @@ func (cmd Command) run() []error {
 			fileChanges []file
 		}
 
-		if errs := bfs.Latest(); errs != nil {
+		var resultFn func(check *bump.Check, err error, duration time.Duration)
+		if verbose {
+			var resultFnMU sync.Mutex
+			resultFn = func(check *bump.Check, err error, duration time.Duration) {
+				resultFnMU.Lock()
+				defer resultFnMU.Unlock()
+				var result string
+				if err == nil {
+					result = check.Latest
+				} else {
+					result = err.Error()
+				}
+				fmt.Fprintf(cmd.Env.Stdout(), "%s %s %s\n", check.Name, result, duration)
+			}
+		}
+
+		if errs := bfs.Latest(resultFn); errs != nil {
 			return errs
 		}
 
