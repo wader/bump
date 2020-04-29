@@ -35,6 +35,9 @@ func TestLocalRepo(t *testing.T) {
 	runOrFatal("git", "init", ".")
 
 	actualRefs, err := gitrefs.Refs("file://"+tempDir, gitrefs.AllProtos)
+	if err != nil {
+		t.Fatal(err)
+	}
 	expectedRefs := []gitrefs.Ref{{Name: "HEAD", ObjID: "refs/heads/master"}}
 	if !reflect.DeepEqual(expectedRefs, actualRefs) {
 		t.Errorf("expected %v got %v", expectedRefs, actualRefs)
@@ -46,6 +49,9 @@ func TestLocalRepo(t *testing.T) {
 	sha := strings.TrimSpace(runOrFatal("git", "rev-parse", "HEAD"))
 
 	actualRefs, err = gitrefs.Refs("file://"+tempDir, gitrefs.AllProtos)
+	if err != nil {
+		t.Fatal(err)
+	}
 	expectedRefs = []gitrefs.Ref{
 		{Name: "HEAD", ObjID: sha},
 		{Name: "refs/heads/master", ObjID: sha},
@@ -195,7 +201,7 @@ func TestHTTPClient(t *testing.T) {
 		}),
 	}}
 	u, _ := url.Parse("http://test/repo.git")
-	hp.Refs(u)
+	_, _ = hp.Refs(u)
 	if !roundTripCalled {
 		t.Error("expected custom client RoundTrip to be called")
 	}

@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/wader/bump/internal/cli"
+	"github.com/wader/bump/internal/deepequal"
 )
 
 type testEnv struct {
@@ -70,35 +70,6 @@ func (e *testEnv) Glob(pattern string) ([]string, error) {
 	}
 
 	return matches, nil
-}
-
-func testDeepEqual(fn func(format string, args ...interface{}), name string, expected interface{}, actual interface{}) {
-	expectedStr := fmt.Sprintf("%#v", expected)
-	actualStr := fmt.Sprintf("%#v", actual)
-	if !reflect.DeepEqual(expected, actual) {
-		diff := ""
-		for i := len(diff); i < len(expectedStr) && i < len(actualStr); i++ {
-			if expectedStr[i] != actualStr[i] {
-				diff += "^"
-			} else {
-				diff += " "
-			}
-		}
-		fn(`
-%s
-expected: %s
-  actual: %s
-    diff: %s`[1:],
-			name, expectedStr, actualStr, diff)
-	}
-}
-
-func errorDeepEqual(t *testing.T, name string, expected interface{}, actual interface{}) {
-	testDeepEqual(t.Errorf, name, expected, actual)
-}
-
-func fatalDeepEqual(t *testing.T, name string, expected interface{}, actual interface{}) {
-	testDeepEqual(t.Fatalf, name, expected, actual)
 }
 
 type section struct {
@@ -167,7 +138,7 @@ a:
 		{LineNr: 7, Name: "a:", Value: ""},
 	}
 
-	errorDeepEqual(t, "sections", expectedSections, actualSections)
+	deepequal.Error(t, "sections", expectedSections, actualSections)
 }
 
 func parseTestEnvs(s string) []testEnv {
@@ -259,14 +230,14 @@ expected stderr2
 		},
 	}
 
-	errorDeepEqual(t, "testenv", expectedEnvs, actualEnvs)
+	deepequal.Error(t, "testenv", expectedEnvs, actualEnvs)
 }
 
 func testCommandEnv(t *testing.T, te testEnv) {
 	cli.Command{Version: "test", Env: &te}.Run()
-	errorDeepEqual(t, "files", te.ExpectedFiles, te.ActualFiles)
-	errorDeepEqual(t, "stdout", te.ExpectedStdout, te.ActualStdoutBuf.String())
-	errorDeepEqual(t, "stderr", te.ExpectedStderr, te.ActualStderrBuf.String())
+	deepequal.Error(t, "files", te.ExpectedFiles, te.ActualFiles)
+	deepequal.Error(t, "stdout", te.ExpectedStdout, te.ActualStdoutBuf.String())
+	deepequal.Error(t, "stderr", te.ExpectedStderr, te.ActualStderrBuf.String())
 }
 
 func TestCommand(t *testing.T) {

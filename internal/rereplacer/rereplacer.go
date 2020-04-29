@@ -55,7 +55,7 @@ func (r Replacer) Replace(s []byte) []byte {
 		for _, submatchIndexes := range replace.Re.FindAllSubmatchIndex(s, -1) {
 			sm := s[submatchIndexes[0]:submatchIndexes[1]]
 			r := replace.Fn(s, submatchIndexes)
-			if bytes.Compare(sm, r) == 0 {
+			if bytes.Equal(sm, r) {
 				// same, skip
 				continue
 			}

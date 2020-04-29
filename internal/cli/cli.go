@@ -138,10 +138,9 @@ func (cmd Command) Run() []error {
 }
 
 func (cmd Command) run() []error {
-	var bumpfile = ""
-	var bumpfilePassed bool = false
-	var include = ""
-	var exclude = ""
+	var bumpfile string
+	var include string
+	var exclude string
 	var verbose bool
 
 	flags := flag.NewFlagSet(cmd.Env.Args()[0], flag.ContinueOnError)
@@ -161,7 +160,7 @@ func (cmd Command) run() []error {
 	} else if err != nil {
 		return []error{err}
 	}
-	bumpfilePassed = flagWasPassed(flags, "c")
+	bumpfilePassed := flagWasPassed(flags, "c")
 
 	if len(flags.Args()) == 0 {
 		flags.Usage()
@@ -181,11 +180,11 @@ func (cmd Command) run() []error {
 		}
 		for _, nf := range cmd.filters() {
 			if filterName == nf.Name {
-				fmt.Fprintf(cmd.Env.Stdout(), cmd.helpFilter(nf))
+				fmt.Fprint(cmd.Env.Stdout(), cmd.helpFilter(nf))
 				return nil
 			}
 		}
-		fmt.Fprintf(cmd.Env.Stdout(), "Filter not found\n")
+		fmt.Fprint(cmd.Env.Stdout(), "Filter not found\n")
 		return nil
 	}
 
@@ -333,7 +332,7 @@ func (cmd Command) run() []error {
 		var diffs []string
 		for _, f := range bfs.Files {
 			newTextBuf := bfs.Replace(f)
-			if bytes.Compare(f.Text, newTextBuf) == 0 {
+			if bytes.Equal(f.Text, newTextBuf) {
 				continue
 			}
 			newText := string(newTextBuf)

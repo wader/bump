@@ -200,17 +200,18 @@ func TestDiff(t *testing.T) {
 		t.Run(tC.a, func(t *testing.T) {
 			aFile, _ := ioutil.TempFile("", "naivediff")
 			defer os.Remove(aFile.Name())
-			io.Copy(aFile, bytes.NewBufferString(tC.a))
+			_, _ = io.Copy(aFile, bytes.NewBufferString(tC.a))
 			aFile.Close()
 			bFile, _ := ioutil.TempFile("", "naivediff")
 			defer os.Remove(bFile.Name())
-			io.Copy(bFile, bytes.NewBufferString(tC.b))
+			_, _ = io.Copy(bFile, bytes.NewBufferString(tC.b))
 			bFile.Close()
 			c := exec.Command("diff", "-U", strconv.Itoa(tC.context), aFile.Name(), bFile.Name())
 			diffBuf, _ := c.Output()
 			realDiff := strings.Join(strings.Split(string(diffBuf), "\n")[2:], "\n")
 
 			actual := naivediff.Diff(tC.a, tC.b, tC.context)
+
 			if actual != tC.expected {
 				t.Errorf("got:\n'%s', expected:\n'%s'", actual, tC.expected)
 			}

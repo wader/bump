@@ -99,7 +99,7 @@ func TestReplace(t *testing.T) {
 		t.Run(string(tC.s)+" -> "+string(tC.expected), func(t *testing.T) {
 			r := rereplacer.Replacer(tC.replacer)
 			actual := r.Replace(tC.s)
-			if bytes.Compare(tC.expected, actual) != 0 {
+			if !bytes.Equal(tC.expected, actual) {
 				t.Errorf("expected %q got %q", string(tC.expected), string(actual))
 			}
 		})

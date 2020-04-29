@@ -29,10 +29,6 @@ func New(prefix string, arg string) (_ filter.Filter, err error) {
 type staticFilter pair.Slice
 
 func (f staticFilter) String() string {
-	var ss []string
-	for _, p := range f {
-		ss = append(ss, p.String())
-	}
 	return Name + ":" + pair.Slice(f).String()
 }
 

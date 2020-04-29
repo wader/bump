@@ -51,7 +51,7 @@ func Test(t *testing.T) {
 			_, err = pktline.Write(b, tC.line)
 			if err != nil {
 				t.Error(err)
-			} else if bytes.Compare(tC.pktLine, b.Bytes()) != 0 {
+			} else if !bytes.Equal(tC.pktLine, b.Bytes()) {
 				t.Errorf("expected %q got %q", tC.pktLine, b.Bytes())
 			}
 		})

@@ -73,7 +73,7 @@ func TestHeaders(t *testing.T) {
 			return nil, 200
 		}),
 	}
-	c.NewRepoRef("user/repo").CreatePullRequest(github.NewPullRequest{})
+	_, _ = c.NewRepoRef("user/repo").CreatePullRequest(github.NewPullRequest{})
 	if !gotCalled {
 		t.Error("did not get called")
 	}
@@ -157,7 +157,7 @@ func TestCreatePullRequest(t *testing.T) {
 				Method: req.Method,
 				Path:   req.URL.Path,
 			}
-			json.NewDecoder(req.Body).Decode(&actualR.NewPR)
+			_ = json.NewDecoder(req.Body).Decode(&actualR.NewPR)
 
 			if !reflect.DeepEqual(expectedR, actualR) {
 				t.Errorf("expected:\n%#v\ngot:\n%#v\n", expectedR, actualR)
@@ -211,7 +211,7 @@ func TestUpdatePullRequest(t *testing.T) {
 				Method: req.Method,
 				Path:   req.URL.Path,
 			}
-			json.NewDecoder(req.Body).Decode(&actualR.UpdatePR)
+			_ = json.NewDecoder(req.Body).Decode(&actualR.UpdatePR)
 
 			if !reflect.DeepEqual(expectedR, actualR) {
 				t.Errorf("expected:\n%#v\ngot:\n%#v\n", expectedR, actualR)
@@ -256,7 +256,7 @@ func TestCreateComment(t *testing.T) {
 				Method: req.Method,
 				Path:   req.URL.Path,
 			}
-			json.NewDecoder(req.Body).Decode(&actualR.NewComment)
+			_ = json.NewDecoder(req.Body).Decode(&actualR.NewComment)
 
 			if !reflect.DeepEqual(expectedR, actualR) {
 				t.Errorf("expected:\n%#v\ngot:\n%#v\n", expectedR, actualR)

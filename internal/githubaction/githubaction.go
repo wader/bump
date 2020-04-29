@@ -167,7 +167,7 @@ func (cmd Command) run() []error {
 
 		for _, f := range bfs.Files {
 			newTextBuf := bfs.Replace(f)
-			if bytes.Compare(f.Text, newTextBuf) == 0 {
+			if bytes.Equal(f.Text, newTextBuf) {
 				continue
 			}
 			if err := ioutil.WriteFile(f.Name, []byte(newTextBuf), 0644); err != nil {

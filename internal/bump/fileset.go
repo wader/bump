@@ -213,7 +213,7 @@ func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Du
 			defer wg.Done()
 			start := time.Now()
 			v, err := c.Pipeline.Value(nil)
-			resultCh <- result{i: i, latest: v, err: err, duration: time.Now().Sub(start)}
+			resultCh <- result{i: i, latest: v, err: err, duration: time.Since(start)}
 		}(i, c)
 	}
 
