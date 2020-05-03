@@ -18,6 +18,15 @@ func expect(t *testing.T, actual, expected string) {
 	}
 }
 
+func TestIsActionEnv(t *testing.T) {
+	if !github.IsActionEnv(createGetEnvFn(map[string]string{"GITHUB_ACTION": "action"})) {
+		t.Fatal("should be action env")
+	}
+	if github.IsActionEnv(createGetEnvFn(map[string]string{})) {
+		t.Fatal("should not be action env")
+	}
+}
+
 func TestNewActionEnv(t *testing.T) {
 	ae, err := github.NewActionEnv(createGetEnvFn(map[string]string{
 		"GITHUB_TOKEN":      "token",

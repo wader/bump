@@ -29,6 +29,11 @@ type ActionEnv struct {
 	RepoRef    *RepoRef // *RepoRef variant of Repository
 }
 
+// IsActionEnv return true if running in action environment
+func IsActionEnv(getenv GetenvFn) bool {
+	return getenv("GITHUB_ACTION") != ""
+}
+
 // NewActionEnv creates a new ActionEnv
 func NewActionEnv(getenv GetenvFn, version string) (*ActionEnv, error) {
 	getenvOrErr := func(name string) (string, error) {

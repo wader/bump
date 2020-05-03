@@ -75,7 +75,7 @@ func rangeOverlap(x1, x2, y1, y2 int) bool {
 
 // NewBumpFileSet creates a new BumpFileSet
 func NewBumpFileSet(
-	env Env,
+	os OS,
 	filters []filter.NamedFilter,
 	bumpfile string,
 	filenames []string) (*FileSet, []error) {
@@ -86,12 +86,12 @@ func NewBumpFileSet(
 
 	if len(filenames) > 0 {
 		for _, f := range filenames {
-			if err := b.addFile(env, f); err != nil {
+			if err := b.addFile(os, f); err != nil {
 				return nil, []error{err}
 			}
 		}
 	} else {
-		if err := b.addBumpfile(env, bumpfile); err != nil {
+		if err := b.addBumpfile(os, bumpfile); err != nil {
 			return nil, []error{err}
 		}
 	}
@@ -105,8 +105,8 @@ func NewBumpFileSet(
 	return b, nil
 }
 
-func (b *FileSet) addBumpfile(env Env, name string) error {
-	text, err := env.ReadFile(name)
+func (b *FileSet) addBumpfile(os OS, name string) error {
+	text, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}
@@ -122,10 +122,10 @@ func (b *FileSet) addBumpfile(env Env, name string) error {
 
 		file.HasConfig = true
 
-		matches, _ := env.Glob(l)
+		matches, _ := os.Glob(l)
 		if len(matches) > 0 {
 			for _, m := range matches {
-				if err := b.addFile(env, m); err != nil {
+				if err := b.addFile(os, m); err != nil {
 					return err
 				}
 			}
@@ -144,8 +144,8 @@ func (b *FileSet) addBumpfile(env Env, name string) error {
 	return b.addChecks(file, checks)
 }
 
-func (b *FileSet) addFile(env Env, name string) error {
-	text, err := env.ReadFile(name)
+func (b *FileSet) addFile(os OS, name string) error {
+	text, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}

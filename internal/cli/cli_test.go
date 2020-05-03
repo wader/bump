@@ -16,7 +16,7 @@ import (
 	"github.com/wader/bump/internal/deepequal"
 )
 
-type testEnv struct {
+type testCase struct {
 	LineNr int
 
 	RunArgs []string
@@ -31,31 +31,35 @@ type testEnv struct {
 	ActualStderrBuf *bytes.Buffer
 }
 
-func (e *testEnv) Args() []string {
-	return e.RunArgs
+func (tc *testCase) Args() []string {
+	return tc.RunArgs
 }
 
-func (e *testEnv) Stdout() io.Writer {
+func (e *testCase) Getenv(name string) string {
+	panic("not implemented")
+}
+
+func (e *testCase) Stdout() io.Writer {
 	return e.ActualStdoutBuf
 }
 
-func (e *testEnv) Stderr() io.Writer {
+func (e *testCase) Stderr() io.Writer {
 	return e.ActualStderrBuf
 }
 
-func (e *testEnv) WriteFile(name string, data []byte) error {
+func (e *testCase) WriteFile(name string, data []byte) error {
 	e.ActualFiles[name] = string(data)
 	return nil
 }
 
-func (e *testEnv) ReadFile(name string) ([]byte, error) {
+func (e *testCase) ReadFile(name string) ([]byte, error) {
 	if data, ok := e.Files[name]; ok {
 		return []byte(data), nil
 	}
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
-func (e *testEnv) Glob(pattern string) ([]string, error) {
+func (e *testCase) Glob(pattern string) ([]string, error) {
 	var matches []string
 
 	for name := range e.Files {
@@ -141,11 +145,11 @@ a:
 	deepequal.Error(t, "sections", expectedSections, actualSections)
 }
 
-func parseTestEnvs(s string) []testEnv {
-	var tes []testEnv
+func parseTestCases(s string) []testCase {
+	var tes []testCase
 
 	for _, c := range strings.Split(s, "---\n") {
-		te := testEnv{}
+		te := testCase{}
 		te.Files = map[string]string{}
 
 		te.ActualStdoutBuf = &bytes.Buffer{}
@@ -184,8 +188,8 @@ func parseTestEnvs(s string) []testEnv {
 	return tes
 }
 
-func TestParseTestEnv(t *testing.T) {
-	actualEnvs := parseTestEnvs(`
+func TestParseTestCase(t *testing.T) {
+	actualTestCase := parseTestCases(`
 /a:
 input content a
 $ a b
@@ -207,7 +211,7 @@ expected stdout2
 expected stderr2
 `[1:])
 
-	expectedEnvs := []testEnv{
+	expectedTestCase := []testCase{
 		{
 			RunArgs:         []string{"a", "b"},
 			Files:           map[string]string{"a": "input content a\n"},
@@ -230,11 +234,11 @@ expected stderr2
 		},
 	}
 
-	deepequal.Error(t, "testenv", expectedEnvs, actualEnvs)
+	deepequal.Error(t, "testcase", expectedTestCase, actualTestCase)
 }
 
-func testCommandEnv(t *testing.T, te testEnv) {
-	cli.Command{Version: "test", Env: &te}.Run()
+func testCommandTestCase(t *testing.T, te testCase) {
+	cli.Command{Version: "test", OS: &te}.Run()
 	deepequal.Error(t, "files", te.ExpectedFiles, te.ActualFiles)
 	deepequal.Error(t, "stdout", te.ExpectedStdout, te.ActualStdoutBuf.String())
 	deepequal.Error(t, "stderr", te.ExpectedStderr, te.ActualStderrBuf.String())
@@ -255,10 +259,10 @@ func TestCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			tes := parseTestEnvs(string(b))
-			for _, te := range tes {
-				t.Run(strconv.Itoa(te.LineNr), func(t *testing.T) {
-					testCommandEnv(t, te)
+			tcs := parseTestCases(string(b))
+			for _, tc := range tcs {
+				t.Run(strconv.Itoa(tc.LineNr), func(t *testing.T) {
+					testCommandTestCase(t, tc)
 				})
 			}
 		})

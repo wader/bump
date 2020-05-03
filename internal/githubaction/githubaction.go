@@ -3,7 +3,6 @@ package githubaction
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,14 +47,14 @@ func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
 // Command is a github action interface to bump packages
 type Command struct {
 	Version string
-	Env     bump.Env
+	OS      bump.OS
 }
 
 // Run bump in a github action environment
 func (cmd Command) Run() []error {
 	errs := cmd.run()
 	for _, err := range errs {
-		fmt.Fprintln(cmd.Env.Stderr(), err)
+		fmt.Fprintln(cmd.OS.Stderr(), err)
 	}
 
 	return errs
@@ -67,7 +66,7 @@ func (cmd Command) run() []error {
 		return []error{err}
 	}
 	// TODO: used in tests
-	ae.Client.BaseURL = os.Getenv("GITHUB_API_URL")
+	ae.Client.BaseURL = cmd.OS.Getenv("GITHUB_API_URL")
 
 	if _, err := exec.LookPath("git"); err != nil {
 		return []error{err}
@@ -111,7 +110,7 @@ func (cmd Command) run() []error {
 
 	// TODO: whitespace in filenames
 	filesParts := strings.Fields(files)
-	bfs, errs := bump.NewBumpFileSet(cmd.Env, all.Filters(), bumpfile, filesParts)
+	bfs, errs := bump.NewBumpFileSet(cmd.OS, all.Filters(), bumpfile, filesParts)
 	if errs != nil {
 		return errs
 	}
@@ -170,7 +169,7 @@ func (cmd Command) run() []error {
 			if bytes.Equal(f.Text, newTextBuf) {
 				continue
 			}
-			if err := ioutil.WriteFile(f.Name, []byte(newTextBuf), 0644); err != nil {
+			if err := cmd.OS.WriteFile(f.Name, []byte(newTextBuf)); err != nil {
 				return []error{err}
 			}
 
