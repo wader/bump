@@ -94,10 +94,10 @@ func sectionParser(re *regexp.Regexp, s string) []section {
 		return ""
 	}
 
-	const lineDelim = '\n'
+	const lineDelim = "\n"
 	var cs *section
 	lineNr := 0
-	lines := strings.Split(s, "\n")
+	lines := strings.Split(s, lineDelim)
 	// skip last if empty because of how split works "a\n" -> ["a", ""]
 	if lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
@@ -114,7 +114,7 @@ func sectionParser(re *regexp.Regexp, s string) []section {
 			cs.Name = firstMatch(sm, func(s string) bool { return len(s) != 0 })
 		} else {
 			// TODO: use builder somehow if performance is needed
-			cs.Value += l + string(lineDelim)
+			cs.Value += l + lineDelim
 		}
 
 	}
