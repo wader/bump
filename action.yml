@@ -4,7 +4,7 @@ icon: 'chevrons-up'
 author: 'Mattias Wadman'
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://mwader/bump'
 inputs:
   bumpfile:
     description: 'Bumpfile to read'
