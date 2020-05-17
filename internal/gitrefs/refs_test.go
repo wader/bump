@@ -63,9 +63,6 @@ func TestLocalRepo(t *testing.T) {
 
 func TestRemoteRepos(t *testing.T) {
 	for _, rawurl := range []string{
-		"https://git.xiph.org/theora.git",
-		"git://git.xiph.org:9418/theora.git",
-		"git://git.xiph.org/theora.git",
 		"https://code.videolan.org/videolan/x264.git",
 		"https://github.com/FFmpeg/FFmpeg.git",
 		"git://github.com/FFmpeg/FFmpeg.git",
