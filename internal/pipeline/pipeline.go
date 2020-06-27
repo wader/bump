@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Pipeline is a slice of filters
@@ -26,7 +25,7 @@ func New(filters []filter.NamedFilter, pipelineStr string) (pipeline Pipeline, e
 
 	for _, filterExp := range parts {
 		filterExp = strings.TrimSpace(filterExp)
-		f, err := filter.New(filters, filterExp)
+		f, err := filter.NewFilter(filters, filterExp)
 		if err != nil {
 			return nil, err
 		}
@@ -48,18 +47,20 @@ func (pl Pipeline) String() string {
 }
 
 // Run pipeline
-func (pl Pipeline) Run(inPp pair.Slice, logFn func(format string, v ...interface{})) (value string, pp pair.Slice, err error) {
-	pp = inPp
+func (pl Pipeline) Run(inVersions filter.Versions, logFn func(format string, v ...interface{})) (outValue string, outVersions filter.Versions, err error) {
+	vs := inVersions
+	versionKey := "name"
 
 	for _, f := range pl {
-		before := pp
-		pp, err = f.Filter(pp)
+		before := vs
+		beforeVersionKey := versionKey
+		vs, versionKey, err = f.Filter(vs, versionKey)
 		if err != nil {
 			return "", nil, err
 		}
 
 		if logFn != nil {
-			after := pair.Slice(pp)
+			after := vs
 			removed := before.Minus(after)
 			added := after.Minus(before)
 			if logFn != nil {
@@ -67,20 +68,26 @@ func (pl Pipeline) Run(inPp pair.Slice, logFn func(format string, v ...interface
 				logFn("  > %+v", before)
 				logFn("  + %+v", added)
 				logFn("  - %+v", removed)
-				logFn("  = %+v", pp)
+				logFn("  @ %s -> %s", beforeVersionKey, versionKey)
+				logFn("  = %+v", vs)
 			}
 		}
 	}
 
-	if len(pp) == 0 {
-		return "", pp, nil
+	if len(vs) == 0 {
+		return "", vs, nil
 	}
 
-	if hasControlCharacters(pp[0].Name) {
-		return "", nil, fmt.Errorf("name contains control characters %q", pp[0].Name)
+	value := vs[0][versionKey]
+	if hasControlCharacters(value) {
+		return "", nil, fmt.Errorf("value %q for key %q version %s contains control characters", value, versionKey, vs[0])
 	}
 
-	return pp[0].Name, pp, nil
+	if logFn != nil {
+		logFn("  value %s", value)
+	}
+
+	return value, vs, nil
 }
 
 // Value run the pipeline and return one value or error

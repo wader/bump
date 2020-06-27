@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // curl -H "Depth: 1" -X PROPFIND http://svn.code.sf.net/p/lame/svn/tags
@@ -39,15 +38,15 @@ var Help = `
 svn:<repo>
 
 Produce versions from tags and branches from a subversion repository. Name will
-be the tag or branch name, value the revision.
+be the tag or branch name, version the revision.
 
 svn:https://svn.apache.org/repos/asf/subversion|*
 `[1:]
 
 type multistatus struct {
 	Response []struct {
-		Href       string `xml:"DAV: href"`
-		VersioName string `xml:"DAV: propstat>prop>version-name"`
+		Href        string `xml:"DAV: href"`
+		VersionName string `xml:"DAV: propstat>prop>version-name"`
 	} `xml:"DAV: response"`
 }
 
@@ -58,7 +57,7 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 	}
 
 	if arg == "" {
-		return nil, fmt.Errorf("needs a repo")
+		return nil, fmt.Errorf("needs a repo url")
 	}
 
 	return svnFilter{repo: arg}, nil
@@ -72,29 +71,29 @@ func (f svnFilter) String() string {
 	return Name + ":" + f.repo
 }
 
-func (f svnFilter) Filter(ps pair.Slice) (pair.Slice, error) {
+func (f svnFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
 	req, err := http.NewRequest("PROPFIND", f.repo+"/tags/", nil)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	req.Header.Set("Depth", "1")
 
 	r, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer r.Body.Close()
 
 	if r.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("error response: %s", r.Status)
+		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
 	var m multistatus
 	if err := xml.NewDecoder(r.Body).Decode(&m); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	ps = append(pair.Slice{}, ps...)
+	vs := append(filter.Versions{}, versions...)
 	for _, r := range m.Response {
 		// ".../svn/tags/a/" -> {..., "svn", "tags", "a", ""}
 		parts := strings.Split(r.Href, "/")
@@ -108,8 +107,8 @@ func (f svnFilter) Filter(ps pair.Slice) (pair.Slice, error) {
 			continue
 		}
 
-		ps = append(ps, pair.Pair{Name: v, Value: r.VersioName})
+		vs = append(vs, filter.NewVersionWithName(v, map[string]string{"version": r.VersionName}))
 	}
 
-	return ps, nil
+	return vs, versionKey, nil
 }

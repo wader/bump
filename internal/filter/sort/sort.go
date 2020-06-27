@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -37,9 +36,10 @@ func (f sortFilter) String() string {
 	return Name
 }
 
-func (f sortFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	sort.Slice(ps, func(i int, j int) bool {
-		return ps[i].Name > ps[j].Name
+func (f sortFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
+	svs := append(filter.Versions{}, versions...)
+	sort.Slice(svs, func(i int, j int) bool {
+		return svs[i][versionKey] > svs[j][versionKey]
 	})
-	return ps, nil
+	return svs, versionKey, nil
 }

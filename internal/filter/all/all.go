@@ -7,12 +7,12 @@ import (
 	"github.com/wader/bump/internal/filter/fetch"
 	"github.com/wader/bump/internal/filter/git"
 	"github.com/wader/bump/internal/filter/gitrefs"
+	"github.com/wader/bump/internal/filter/key"
 	"github.com/wader/bump/internal/filter/re"
 	"github.com/wader/bump/internal/filter/semver"
 	"github.com/wader/bump/internal/filter/sort"
 	"github.com/wader/bump/internal/filter/static"
 	"github.com/wader/bump/internal/filter/svn"
-	"github.com/wader/bump/internal/filter/value"
 )
 
 // Filters return all filters
@@ -26,7 +26,7 @@ func Filters() []filter.NamedFilter {
 		{Name: semver.Name, Help: semver.Help, NewFn: semver.New},
 		{Name: re.Name, Help: re.Help, NewFn: re.New},
 		{Name: sort.Name, Help: sort.Help, NewFn: sort.New},
-		{Name: value.Name, Help: value.Help, NewFn: value.New},
+		{Name: key.Name, Help: key.Help, NewFn: key.New},
 		{Name: static.Name, Help: static.Help, NewFn: static.New},
 		{Name: err.Name, Help: err.Help, NewFn: err.New},
 	}

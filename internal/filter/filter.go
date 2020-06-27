@@ -4,17 +4,15 @@ import (
 	"errors"
 	"regexp"
 	"strings"
-
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // ErrNoFilterMatching no filter matches filter expression
 var ErrNoFilterMatching = errors.New("no filter matches")
 
-// Filter filters version pairs
+// Filter filters, translate or produces versions
 type Filter interface {
 	String() string
-	Filter(ps pair.Slice) (pair.Slice, error)
+	Filter(versions Versions, versionKey string) (newVersions Versions, newVersionKey string, err error)
 }
 
 // NewFilterFn function used to create a new filter
@@ -29,8 +27,8 @@ type NamedFilter struct {
 
 var filterNameArgRe = regexp.MustCompile(`^(\w+):(.*)$`)
 
-// New creates a new filter from expression based on list of filter create functions
-func New(filters []NamedFilter, filterExp string) (Filter, error) {
+// NewFilter creates a new filter from expression based on list of filter create functions
+func NewFilter(filters []NamedFilter, filterExp string) (Filter, error) {
 	nameArgSM := filterNameArgRe.FindStringSubmatch(filterExp)
 	var name, arg string
 	if len(nameArgSM) == 3 {
@@ -49,7 +47,7 @@ func New(filters []NamedFilter, filterExp string) (Filter, error) {
 		}
 	}
 
-	// fuzzy arg as prefix, "@", "sort" etc
+	// fuzzy arg as prefix, "sort" etc
 	for _, nf := range filters {
 		if f, err := nf.NewFn(arg, ""); f != nil {
 			return f, err

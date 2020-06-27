@@ -1,6 +1,6 @@
 err:test -> err:test
     -> error:test
-static:a\n:b\n -> static:a\n:b\n
-    -> error:name contains control characters "a\n"
-static:a\n:b\n|value -> static:a\n:b\n|value
-    -> error:name contains control characters "b\n"
+static:a\n:b=c\n -> static:a\n:b=c\n
+    -> error:value "a\n" for key "name" version a\n:b=c\n contains control characters
+static:a\n:b=c\n|key:b -> static:a\n:b=c\n|key:b
+    -> error:value "c\n" for key "b" version a\n:b=c\n contains control characters

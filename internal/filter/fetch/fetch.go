@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -17,7 +16,7 @@ const Name = "fetch"
 var Help = `
 fetch:<url>, <http://> or <https://>
 
-Fetch a URL and produce one version pair with the content as name.
+Fetch a URL and produce one version with the content as the key "name".
 
 fetch:http://libjpeg.sourceforge.net|/latest release is version (\w+)/
 `[1:]
@@ -59,21 +58,24 @@ func (f fetchFilter) String() string {
 	return Name + ":" + f.urlStr
 }
 
-func (f fetchFilter) Filter(ps pair.Slice) (pair.Slice, error) {
+func (f fetchFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
 	r, err := http.Get(f.urlStr)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer r.Body.Close()
 
 	if r.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("error response: %s", r.Status)
+		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return pair.Slice{pair.Pair{Name: string(b)}}, nil
+	vs := append(filter.Versions{}, versions...)
+	vs = append(vs, filter.NewVersionWithName(string(b), nil))
+
+	return vs, versionKey, nil
 }

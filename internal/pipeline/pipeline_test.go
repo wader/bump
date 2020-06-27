@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/wader/bump/internal/deepequal"
 	"github.com/wader/bump/internal/filter"
 	"github.com/wader/bump/internal/filter/all"
-	"github.com/wader/bump/internal/filter/pair"
 	"github.com/wader/bump/internal/pipeline"
 )
 
@@ -18,15 +17,16 @@ type testCase struct {
 	lineNr              int
 	pipelineStr         string
 	expectedPipelineStr string
-	err                 string
-	filterTests         []testFilterCase
+	expectedErr         string
+	testFilterCases     []testFilterCase
 }
 
 type testFilterCase struct {
-	lineNr        int
-	pairs         pair.Slice
-	expectedPairs pair.Slice
-	err           string
+	lineNr           int
+	versions         filter.Versions
+	expectedVersions filter.Versions
+	expectedValue    string
+	expectedErr      string
 }
 
 func parseTestCase(s string) []testCase {
@@ -45,19 +45,27 @@ func parseTestCase(s string) []testCase {
 		if strings.HasPrefix(l, " ") {
 			parts := strings.Split(l, "->")
 
-			pairs := strings.TrimSpace(parts[0])
+			versions := strings.TrimSpace(parts[0])
 			result := strings.TrimSpace(parts[1])
 
 			if strings.HasPrefix(result, errPrefix) {
-				tc.filterTests = append(tc.filterTests, testFilterCase{
-					lineNr: lineNr,
-					err:    strings.TrimPrefix(result, errPrefix),
+				tc.testFilterCases = append(tc.testFilterCases, testFilterCase{
+					lineNr:      lineNr,
+					versions:    filter.NewVersionsFromString(versions),
+					expectedErr: strings.TrimPrefix(result, errPrefix),
 				})
 			} else {
-				tc.filterTests = append(tc.filterTests, testFilterCase{
-					lineNr:        lineNr,
-					pairs:         pair.SliceFromString(pairs),
-					expectedPairs: pair.SliceFromString(result),
+				resultParts := strings.SplitN(result, " ", 2)
+				value := ""
+				if len(resultParts) == 2 {
+					value = resultParts[1]
+				}
+
+				tc.testFilterCases = append(tc.testFilterCases, testFilterCase{
+					lineNr:           lineNr,
+					versions:         filter.NewVersionsFromString(versions),
+					expectedVersions: filter.NewVersionsFromString(resultParts[0]),
+					expectedValue:    value,
 				})
 			}
 		} else {
@@ -73,7 +81,7 @@ func parseTestCase(s string) []testCase {
 				tc = testCase{
 					lineNr:      lineNr,
 					pipelineStr: pipelineStr,
-					err:         strings.TrimPrefix(expectedPipelineStr, errPrefix),
+					expectedErr: strings.TrimPrefix(expectedPipelineStr, errPrefix),
 				}
 			} else {
 				tc = testCase{
@@ -97,8 +105,8 @@ func TestParseTestCase(t *testing.T) {
 # test
 expr -> expected
     ->
-    a:1 -> a:1
-    a,b:2 -> a,b:2
+    a:key=1 -> a:key=1 value
+    a,b:key=2 -> a,b:key=2 value
 test -> error:test
 
 /re/template/ -> re:/re/template/
@@ -111,72 +119,85 @@ re:/re/ -> re:/re/
 			lineNr:              2,
 			pipelineStr:         "expr",
 			expectedPipelineStr: "expected",
-			filterTests: []testFilterCase{
+			testFilterCases: []testFilterCase{
 				{
 					lineNr: 3,
 				},
 				{
-					lineNr:        4,
-					pairs:         pair.Slice{{Name: "a", Value: "1"}},
-					expectedPairs: pair.Slice{{Name: "a", Value: "1"}}},
+					lineNr:           4,
+					versions:         filter.Versions{map[string]string{"name": "a", "key": "1"}},
+					expectedVersions: filter.Versions{map[string]string{"name": "a", "key": "1"}},
+					expectedValue:    "value",
+				},
 				{
-					lineNr:        5,
-					pairs:         pair.Slice{{Name: "a"}, {Name: "b", Value: "2"}},
-					expectedPairs: pair.Slice{{Name: "a"}, {Name: "b", Value: "2"}},
+					lineNr: 5,
+					versions: filter.Versions{
+						map[string]string{"name": "a"},
+						map[string]string{"name": "b", "key": "2"},
+					},
+					expectedVersions: filter.Versions{
+						map[string]string{"name": "a"},
+						map[string]string{"name": "b", "key": "2"},
+					},
+					expectedValue: "value",
 				},
 			},
 		},
-		{lineNr: 6, pipelineStr: "test", err: "test"},
+		{lineNr: 6, pipelineStr: "test", expectedErr: "test"},
 		{lineNr: 8, pipelineStr: "/re/template/", expectedPipelineStr: "re:/re/template/"},
 		{
 			lineNr:              9,
 			pipelineStr:         "re:/re/",
 			expectedPipelineStr: "re:/re/",
-			filterTests: []testFilterCase{
+			testFilterCases: []testFilterCase{
 				{
-					lineNr: 10,
-					err:    "test",
+					lineNr:      10,
+					expectedErr: "test",
 				},
 			},
 		},
 	}
 
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("got %#v expected %#v", actual, expected)
-	}
+	deepequal.Error(t, "parse", expected, actual)
 }
 
 func testPipelineTestCase(t *testing.T, tcs []testCase) {
 	for _, tc := range tcs {
 		t.Run(fmt.Sprintf("%d", tc.lineNr), func(t *testing.T) {
+			tc := tc
 			p, err := pipeline.New(all.Filters(), tc.pipelineStr)
-			if tc.err != "" {
+			if tc.expectedErr != "" {
 				if err == nil {
-					t.Fatalf("expected error %q got success", tc.err)
-				} else if tc.err != err.Error() {
-					t.Fatalf("expected error %q got %q", tc.err, err.Error())
+					t.Fatalf("expected error %q got success", tc.expectedErr)
+				} else if tc.expectedErr != err.Error() {
+					t.Fatalf("expected error %q got %q", tc.expectedErr, err.Error())
 				}
 			} else {
 				if err != nil {
 					t.Fatalf("expected %v got error %q", tc.expectedPipelineStr, err)
-				} else if tc.expectedPipelineStr != p.String() {
-					t.Fatalf("expected %q got %q", tc.expectedPipelineStr, p.String())
+				} else {
+					deepequal.Error(t, "pipeline string", tc.expectedPipelineStr, p.String())
 				}
 			}
 
-			for _, ft := range tc.filterTests {
+			for _, ft := range tc.testFilterCases {
 				t.Run(fmt.Sprintf("%d", ft.lineNr), func(t *testing.T) {
-					_, actualPp, err := p.Run(ft.pairs, nil)
+					actualValue, actualVersions, err := p.Run(ft.versions, nil)
 
-					if ft.err != "" {
-						if err == nil || err.Error() != ft.err {
-							t.Fatalf("expected error %q got %q", ft.err, err)
+					if ft.expectedErr != "" {
+						if err == nil {
+							t.Fatalf("expected error %q got success", ft.expectedErr)
+						} else if err.Error() != ft.expectedErr {
+							t.Fatalf("expected error %q got %q", ft.expectedErr, err)
 						}
 					} else {
 						if err != nil {
-							t.Fatalf("expected %v got error %q", ft.expectedPairs, err)
-						} else if !reflect.DeepEqual(ft.expectedPairs, actualPp) {
-							t.Fatalf("expected %v got %v", ft.expectedPairs, actualPp)
+							t.Fatalf("expected %v got error %q", ft.expectedVersions, err)
+						} else {
+							deepequal.Error(t, "versions", ft.expectedVersions, actualVersions)
+							if ft.expectedValue != actualValue {
+								t.Errorf("expected %q, got %q", ft.expectedValue, actualValue)
+							}
 						}
 					}
 				})
@@ -208,15 +229,15 @@ func TestPipeline(t *testing.T) {
 
 type testFilter struct {
 	name string
-	ps   pair.Slice
+	vs   filter.Versions
 }
 
 func (t testFilter) String() string {
 	return t.name
 }
 
-func (t testFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	return t.ps, nil
+func (t testFilter) Filter(versions filter.Versions, versionKey string) (newVersions filter.Versions, newVersionKey string, err error) {
+	return t.vs, versionKey, nil
 }
 
 func testPipeline(t *testing.T, pipelineStr string) pipeline.Pipeline {
@@ -226,7 +247,7 @@ func testPipeline(t *testing.T, pipelineStr string) pipeline.Pipeline {
 				Name: "a",
 				NewFn: func(prefix string, arg string) (filter.Filter, error) {
 					if arg == "a" {
-						return testFilter{name: "a", ps: pair.Slice{{Name: "a", Value: "1"}}}, nil
+						return testFilter{name: "a", vs: filter.Versions{filter.NewVersionWithName("a", nil)}}, nil
 					}
 					return nil, nil
 				},
@@ -253,7 +274,7 @@ func TestString(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	p := testPipeline(t, "a|a")
-	expectedRun := pair.Slice{{Name: "a", Value: "1"}}
+	expectedRun := filter.Versions{map[string]string{"name": "a"}}
 	expectedValue := "a"
 	actualValue, actualRun, runErr := p.Run(nil, nil)
 
@@ -263,9 +284,7 @@ func TestRun(t *testing.T) {
 	if expectedValue != actualValue {
 		t.Errorf("expected value %q got %q", expectedValue, actualValue)
 	}
-	if !reflect.DeepEqual(expectedRun, actualRun) {
-		t.Errorf("expected %v got %v", expectedRun, actualRun)
-	}
+	deepequal.Error(t, "run", expectedRun, actualRun)
 }
 
 func TestValue(t *testing.T) {

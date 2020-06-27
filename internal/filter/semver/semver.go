@@ -8,7 +8,6 @@ import (
 
 	mmsemver "github.com/Masterminds/semver/v3"
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -105,50 +104,50 @@ func (f semverFilter) String() string {
 	return Name + ":" + f.constraintStr
 }
 
-func (f semverFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	type vPair struct {
+func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
+	type semverVersion struct {
 		ver *mmsemver.Version
-		p   pair.Pair
+		v   filter.Version
 	}
 
-	var vps []vPair
-	for _, p := range ps {
-		ver, err := mmsemver.NewVersion(p.Name)
+	var svs []semverVersion
+	for _, v := range versions {
+		ver, err := mmsemver.NewVersion(v[versionKey])
 		// ignore everything that is not valid semver
 		if err != nil {
 			continue
 		}
 
 		if f.template != "" {
-			vps = append(vps, vPair{ver: ver, p: pair.Pair{
-				Name:  expandTemplate(ver, f.template),
-				Value: p.Value,
-			}})
+			svs = append(svs, semverVersion{ver: ver, v: filter.NewVersionWithName(
+				expandTemplate(ver, f.template),
+				v,
+			)})
 		} else {
-			vps = append(vps, vPair{ver: ver, p: p})
+			svs = append(svs, semverVersion{ver: ver, v: v})
 		}
 	}
-	sort.Slice(vps, func(i int, j int) bool {
-		return vps[i].ver.LessThan(vps[j].ver)
+	sort.Slice(svs, func(i int, j int) bool {
+		return svs[i].ver.LessThan(svs[j].ver)
 	})
 
 	if f.template != "" {
-		var nps pair.Slice
-		for _, v := range vps {
-			nps = append(nps, v.p)
+		var vs filter.Versions
+		for _, v := range svs {
+			vs = append(vs, v.v)
 		}
-		return nps, nil
+		return vs, versionKey, nil
 	}
 
-	var latest *vPair
-	for i, v := range vps {
+	var latest *semverVersion
+	for i, v := range svs {
 		if f.constraint.Check(v.ver) {
-			latest = &vps[i]
+			latest = &svs[i]
 		}
 	}
 	if latest == nil {
-		return nil, nil
+		return nil, "", nil
 	}
 
-	return pair.Slice{(*latest).p}, nil
+	return filter.Versions{(*latest).v}, versionKey, nil
 }

@@ -1,7 +1,7 @@
 svn:https://a -> svn:https://a
 svn:https://svn.apache.org/repos/asf/subversion|semver:1.12.2 -> svn:https://svn.apache.org/repos/asf/subversion|semver:1.12.2
-    -> 1.12.2:1863370
+    -> 1.12.2:name=1.12.2:version=1863370 1.12.2
 
 # svn with login
 svn:http://anonymous:@svn.xvid.org|re:/^release-(.*)$/|re:/_/./|semver:1.3.7 -> svn:http://anonymous:@svn.xvid.org|re:/^release-(.*)$/|re:/_/./|semver:1.3.7
-    -> 1.3.7:2194
+    -> 1.3.7:name=1.3.7:version=2194 1.3.7

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 	"github.com/wader/bump/internal/gitrefs"
 )
 
@@ -15,7 +14,8 @@ const Name = "gitrefs"
 var Help = `
 gitrefs:<repo>
 
-Produce versions from all refs for a git repository.
+Produce versions from all refs for a git repository. Name will be the whole ref
+like "refs/tags/v2.7.3" and commit will be the commit hash.
 
 Use git filter to get versions from only tags.
 
@@ -43,16 +43,16 @@ func (f gitRefsFilter) String() string {
 	return Name + ":" + f.repo
 }
 
-func (f gitRefsFilter) Filter(ps pair.Slice) (pair.Slice, error) {
+func (f gitRefsFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
 	refPairs, err := gitrefs.Refs(f.repo, gitrefs.AllProtos)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	ps = append(pair.Slice{}, ps...)
+	vs := append(filter.Versions{}, versions...)
 	for _, p := range refPairs {
-		ps = append(ps, pair.Pair{Name: p.Name, Value: p.ObjID})
+		vs = append(vs, filter.NewVersionWithName(p.Name, map[string]string{"commit": p.ObjID}))
 	}
 
-	return ps, nil
+	return vs, versionKey, nil
 }

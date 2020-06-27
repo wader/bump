@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -48,27 +47,27 @@ func (f dockerFilter) String() string {
 	return Name + ":" + f.imageName
 }
 
-func (f dockerFilter) Filter(ps pair.Slice) (pair.Slice, error) {
+func (f dockerFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
 	r, err := http.Get(fmt.Sprintf(defaultIndex, f.imageName))
 	if err != nil {
-		return nil, err
+		return nil, versionKey, err
 	}
 	defer r.Body.Close()
 
 	if r.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("error response: %s", r.Status)
+		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
 	var tags []tag
 	err = json.NewDecoder(r.Body).Decode(&tags)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	tagNames := append(pair.Slice{}, ps...)
+	tagNames := append(filter.Versions{}, versions...)
 	for _, t := range tags {
-		tagNames = append(tagNames, pair.Pair{Name: t.Name, Value: ""})
+		tagNames = append(tagNames, filter.NewVersionWithName(t.Name, nil))
 	}
 
-	return tagNames, nil
+	return tagNames, versionKey, nil
 }

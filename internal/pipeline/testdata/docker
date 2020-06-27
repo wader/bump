@@ -1,2 +1,2 @@
 docker:alpine|^2 -> docker:alpine|semver:^2
-    -> 2.7
+    -> 2.7 2.7

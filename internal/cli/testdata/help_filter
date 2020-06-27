@@ -1,9 +1,9 @@
 $ bump help static
 >stdout:
 Syntax:
-static:<name[:value]>,...
+static:<name[:key=value:...]>,...
 
-Produce version pairs from filter argument.
+Produce versions from filter argument.
 
 Examples:
-bump pipeline 'static:1,2,3|sort'
+bump pipeline 'static:1,2,3,4:key=value:a=b|sort'

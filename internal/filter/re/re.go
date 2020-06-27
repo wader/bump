@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -20,7 +19,7 @@ An alternative regex/template delimited can specified by changing the first
 / into some other character, for example: re:#regexp#template#.
 
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
-If name does not match regexp the pair will be skipped.
+If name does not match regexp the version will be skipped.
 
 If only a regexp and no template is provided and no submatches are defined the
 name will not be changed.
@@ -47,7 +46,7 @@ static:ab|re:/a(.)/
 static:ab:1|/(.)(.)/${0}$2$1/
 # named submatch as name and value
 static:ab|re:/(?P<name>.)(?P<value>.)/
-static:ab|re:/(?P<name>.)(?P<value>.)/|@
+static:ab|re:/(?P<name>.)(?P<value>.)/|@value
 `[1:]
 
 func parse(delim string, s string) (re *regexp.Regexp, expand string, err error) {
@@ -108,61 +107,70 @@ func (f reFilter) String() string {
 	return Name + ":" + f.delim + strings.Join(ss, f.delim) + f.delim
 }
 
-func (f reFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	nameIndex := 0
-	valueIndex := 0
-	for i, n := range f.re.SubexpNames() {
-		switch n {
-		case "name":
-			nameIndex = i
-		case "value":
-			valueIndex = i
-		}
-	}
+func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
+	subexpNames := f.re.SubexpNames()
 
-	var filtered pair.Slice
+	var filtered filter.Versions
 	if f.re.NumSubexp() == 0 {
-		for _, p := range ps {
-			if !f.re.MatchString(p.Name) {
+		for _, v := range versions {
+			value, ok := v[versionKey]
+			if !ok {
+				return nil, "", fmt.Errorf("key %q is missing for %s", versionKey, v)
+			}
+			if !f.re.MatchString(value) {
 				continue
 			}
 
 			if f.expand == "" {
-				filtered = append(filtered, p)
+				filtered = append(filtered, v)
 			} else {
-				filtered = append(filtered, pair.Pair{
-					Name:  f.re.ReplaceAllLiteralString(p.Name, f.expand),
-					Value: p.Value,
-				})
+				filtered = append(filtered,
+					filter.NewVersionWithName(
+						f.re.ReplaceAllLiteralString(value, f.expand),
+						v,
+					))
 			}
 		}
 	} else {
-		for _, p := range ps {
-			for _, sm := range f.re.FindAllStringSubmatchIndex(p.Name, -1) {
+		for _, v := range versions {
+			value, ok := v[versionKey]
+			if !ok {
+				return nil, "", fmt.Errorf("key %q is missing for %s", versionKey, v)
+			}
+
+			for _, sm := range f.re.FindAllStringSubmatchIndex(value, -1) {
 				name := ""
-				value := ""
+				values := map[string]string{}
+				for k, v := range v {
+					values[k] = v
+				}
 
-				if f.expand == "" {
-					if nameIndex != 0 {
-						name = p.Name[sm[nameIndex*2]:sm[nameIndex*2+1]]
-					} else {
-						// we know there is one subexp
-						name = p.Name[sm[2]:sm[3]]
+				nameFound := false
+				for smi := 0; smi < f.re.NumSubexp()+1; smi++ {
+					subexpName := subexpNames[smi]
+					if subexpName == "" || sm[smi*2] == -1 {
+						continue
 					}
-				} else {
-					name = string(f.re.ExpandString(nil, f.expand, p.Name, sm))
+
+					if subexpName == "name" {
+						nameFound = true
+						name = value[sm[smi*2]:sm[smi*2+1]]
+					}
+
+					values[subexpNames[smi]] = value[sm[smi*2]:sm[smi*2+1]]
 				}
 
-				if valueIndex != 0 {
-					value = p.Name[sm[valueIndex*2]:sm[valueIndex*2+1]]
-				} else {
-					value = p.Value
+				if f.expand != "" {
+					name = string(f.re.ExpandString(nil, f.expand, value, sm))
+				} else if !nameFound && sm[2] != -1 {
+					// TODO: no name subexp, use first?
+					name = value[sm[2]:sm[3]]
 				}
 
-				filtered = append(filtered, pair.Pair{Name: name, Value: value})
+				filtered = append(filtered, filter.NewVersionWithName(name, values))
 			}
 		}
 	}
 
-	return filtered, nil
+	return filtered, versionKey, nil
 }

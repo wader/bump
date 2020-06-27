@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/wader/bump/internal/filter"
-	"github.com/wader/bump/internal/filter/pair"
 )
 
 // Name of filter
@@ -35,6 +34,6 @@ func (f errFilter) String() string {
 	return Name + ":" + f.err.Error()
 }
 
-func (f errFilter) Filter(ps pair.Slice) (pair.Slice, error) {
-	return nil, f.err
+func (f errFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
+	return nil, versionKey, f.err
 }

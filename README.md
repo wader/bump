@@ -17,7 +17,7 @@ FROM alpine:3.9.3 AS builder
 
 # See possible updates
 $ bump check examples/Dockerfile
-alpine 3.11.6
+alpine 3.12.0
 
 # See what will be changed
 $ bump diff examples/Dockerfile
@@ -26,7 +26,7 @@ $ bump diff examples/Dockerfile
 @@ -1,2 +1,2 @@
  # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 -FROM alpine:3.9.3 AS builder
-+FROM alpine:3.11.6 AS builder
++FROM alpine:3.12.0 AS builder
 
 # Write changes
 $ bump update examples/Dockerfile
@@ -122,8 +122,8 @@ FILTER
   semver:<constraint> | semver:<n.n.n-pre+build> | <constraint> | <n.n.n-pre+build>
   re:/<regexp>/ | re:/<regexp>/<template>/ | /<regexp>/ | /<regexp>/<template>/
   sort
-  value | @
-  static:<name[:value]>,...
+  key:name | @name
+  static:<name[:key=value:...]>,...
   err:<error>
 NAME is a configuration name
 REGEXP is a regexp with one submatch to find current version
@@ -183,12 +183,17 @@ FROM alpine:3.9.3 AS builder
 
 A pipeline consist of one or more filters executed in sequence. Usually
 it starts with a filter that produces versions from a source like a git repository.
-After that one or filters can be used to narrow down to one version.
-If a pipeline ends up producing more than one version the first will be used.
+After that one or more filters can be used to transform, sort etc to narrow down to
+one version. If a pipeline ends up producing more than one version the first will be
+used.
 
-A version can optionally have a associated value that can for example in the git case
-be the commit hash of the tag. To use the value instead of the version use the
-`value` or `@` filter last in a pipeline.
+A version is dictionary of values, the "name" is either the version number "1.2.3"
+or some symbolic name like "master". In addition a version can have other keys like
+"commit", "version" etc depending on the source. You can use the `key:name` or `@name`
+filter to.
+
+Default all filter that filters or sorts operate on the "default" key which is
+the "name" of a version. This can be changed along a pipeline using `key:name` or `@name`.
 
 ### Examples
 
@@ -199,15 +204,15 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.2.2
+4.3
 
 # Commit hash of the latest 4.0 ffmpeg version
-$ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@'
-b53940e13dde81d721621b4d5296eede5795aadd
+$ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
+7ab7d42cc98bcf0c5cda3f99eb35e20be1890646
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.14.2
+1.14.4
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
@@ -228,30 +233,31 @@ produces versions, `re` and `semver` transforms and filters.
 [semver](#semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`  
 [re](#re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`  
 [sort](#sort) `sort`  
-[value](#value) `value` or `@`  
-[static](#static) `static:<name[:value]>,...`  
+[key](#key) `key:name` or `@name`  
+[static](#static) `static:<name[:key=value:...]>,...`  
 [err](#err) `err:<error>`  
 ### git
 
 `git:<repo>` or `<repo.git>`
 
 Produce versions from tags for a git repository. Name will be
-the version found in the tag, value the commit hash or tag object.
+the version found in the tag, commit the commit hash or tag object.
 
 Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.26.2
+2.27.0
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.26.2
+2.27.0
 ```
 
 ### gitrefs
 
 `gitrefs:<repo>`
 
-Produce versions from all refs for a git repository.
+Produce versions from all refs for a git repository. Name will be the whole ref
+like "refs/tags/v2.7.3" and commit will be the commit hash.
 
 Use git filter to get versions from only tags.
 
@@ -268,7 +274,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.11.6
+3.12.0
 ```
 
 ### svn
@@ -276,18 +282,18 @@ $ bump pipeline 'docker:alpine|^3'
 `svn:<repo>`
 
 Produce versions from tags and branches from a subversion repository. Name will
-be the tag or branch name, value the revision.
+be the tag or branch name, version the revision.
 
 ```sh
 $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
-1.13.0
+1.14.0
 ```
 
 ### fetch
 
 `fetch:<url>`, `<http://>` or `<https://>`
 
-Fetch a URL and produce one version pair with the content as name.
+Fetch a URL and produce one version with the content as the key "name".
 
 ```sh
 $ bump pipeline 'fetch:http://libjpeg.sourceforge.net|/latest release is version (\w+)/'
@@ -325,7 +331,7 @@ An alternative regex/template delimited can specified by changing the first
 / into some other character, for example: re:#regexp#template#.
 
 Filter name using a [golang regexp](https://golang.org/pkg/regexp/syntax/).
-If name does not match regexp the pair will be skipped.
+If name does not match regexp the version will be skipped.
 
 If only a regexp and no template is provided and no submatches are defined the
 name will not be changed.
@@ -359,7 +365,7 @@ abba
 # named submatch as name and value
 $ bump pipeline 'static:ab|re:/(?P<name>.)(?P<value>.)/'
 a
-$ bump pipeline 'static:ab|re:/(?P<name>.)(?P<value>.)/|@'
+$ bump pipeline 'static:ab|re:/(?P<name>.)(?P<value>.)/|@value'
 b
 ```
 
@@ -374,29 +380,32 @@ $ bump pipeline 'static:a,b,c|sort'
 c
 ```
 
-### value
+### key
 
-`value` or `@`
+`key:name` or `@name`
 
-Swap name and value for each pair. Useful to have last in a pipeline
-to use git hash instead of tag name etc.
+Change default key for a pipeline. Useful to have last in a pipeline
+to use git commit hash instead of tag name etc or in the middle of
+a pipeline if you want to regexp filter on something else than name.
 
 ```sh
-$ bump pipeline 'static:a:1|@'
-1
-$ bump pipeline 'static:a:1|value'
-1
+$ bump pipeline 'static:1.0:hello=world|@hello'
+world
+$ bump pipeline 'static:1.0:hello=world|@name'
+1.0
+$ bump pipeline 'static:1.0:hello=world|key:hello'
+world
 ```
 
 ### static
 
-`static:<name[:value]>,...`
+`static:<name[:key=value:...]>,...`
 
-Produce version pairs from filter argument.
+Produce versions from filter argument.
 
 ```sh
-$ bump pipeline 'static:1,2,3|sort'
-3
+$ bump pipeline 'static:1,2,3,4:key=value:a=b|sort'
+4
 ```
 
 ### err

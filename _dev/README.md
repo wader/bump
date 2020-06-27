@@ -138,12 +138,17 @@ FROM alpine:3.9.3 AS builder
 
 A pipeline consist of one or more filters executed in sequence. Usually
 it starts with a filter that produces versions from a source like a git repository.
-After that one or filters can be used to narrow down to one version.
-If a pipeline ends up producing more than one version the first will be used.
+After that one or more filters can be used to transform, sort etc to narrow down to
+one version. If a pipeline ends up producing more than one version the first will be
+used.
 
-A version can optionally have a associated value that can for example in the git case
-be the commit hash of the tag. To use the value instead of the version use the
-`value` or `@` filter last in a pipeline.
+A version is dictionary of values, the "name" is either the version number "1.2.3"
+or some symbolic name like "master". In addition a version can have other keys like
+"commit", "version" etc depending on the source. You can use the `key:name` or `@name`
+filter to.
+
+Default all filter that filters or sorts operate on the "default" key which is
+the "name" of a version. This can be changed along a pipeline using `key:name` or `@name`.
 
 ### Examples
 
@@ -156,7 +161,7 @@ can be helpful when testing pipelines.
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
 
 # Commit hash of the latest 4.0 ffmpeg version
-$ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@'
+$ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
