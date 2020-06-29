@@ -93,8 +93,8 @@ go get github.com/wader/bump/cmd/bump
 $ bump help
 Usage: bump [OPTIONS] COMMAND
 OPTIONS:
-  -c                    Bumpfile to read (Bumpfile)
   -e                    Comma separated names to exclude
+  -f                    Bumpfile to read (Bumpfile)
   -i                    Comma separated names to include
   -v                    Verbose (false)
 

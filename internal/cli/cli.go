@@ -144,7 +144,7 @@ func (cmd Command) run() []error {
 	var verbose bool
 
 	flags := flag.NewFlagSet(cmd.OS.Args()[0], flag.ContinueOnError)
-	flags.StringVar(&bumpfile, "c", BumpfileName, "Bumpfile to read")
+	flags.StringVar(&bumpfile, "f", BumpfileName, "Bumpfile to read")
 	flags.StringVar(&include, "i", "", "Comma separated names to include")
 	flags.StringVar(&exclude, "e", "", "Comma separated names to exclude")
 	flags.BoolVar(&verbose, "v", false, "Verbose")
@@ -160,7 +160,7 @@ func (cmd Command) run() []error {
 	} else if err != nil {
 		return []error{err}
 	}
-	bumpfilePassed := flagWasPassed(flags, "c")
+	bumpfilePassed := flagWasPassed(flags, "f")
 
 	if len(flags.Args()) == 0 {
 		flags.Usage()

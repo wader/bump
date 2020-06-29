@@ -1,5 +1,5 @@
 /a:
 /b:
-$ bump -c b list a
+$ bump -f b list a
 >stderr:
 both bumpfile and file arguments can't be specified

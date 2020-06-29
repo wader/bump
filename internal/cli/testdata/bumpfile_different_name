@@ -3,6 +3,6 @@ name: 1
 /b:
 a /name: (1)/ static:1
 a
-$ bump -c b list
+$ bump -f b list
 >stdout:
 a
