@@ -139,35 +139,33 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 			}
 
 			for _, sm := range f.re.FindAllStringSubmatchIndex(value, -1) {
-				name := ""
 				values := map[string]string{}
 				for k, v := range v {
 					values[k] = v
 				}
 
-				nameFound := false
+				versionKeyFound := false
 				for smi := 0; smi < f.re.NumSubexp()+1; smi++ {
 					subexpName := subexpNames[smi]
 					if subexpName == "" || sm[smi*2] == -1 {
 						continue
 					}
 
-					if subexpName == "name" {
-						nameFound = true
-						name = value[sm[smi*2]:sm[smi*2+1]]
+					if subexpName == versionKey {
+						versionKeyFound = true
 					}
 
 					values[subexpNames[smi]] = value[sm[smi*2]:sm[smi*2+1]]
 				}
 
 				if f.expand != "" {
-					name = string(f.re.ExpandString(nil, f.expand, value, sm))
-				} else if !nameFound && sm[2] != -1 {
+					values[versionKey] = string(f.re.ExpandString(nil, f.expand, value, sm))
+				} else if !versionKeyFound && sm[2] != -1 {
 					// TODO: no name subexp, use first?
-					name = value[sm[2]:sm[3]]
+					values[versionKey] = value[sm[2]:sm[3]]
 				}
 
-				filtered = append(filtered, filter.NewVersionWithName(name, values))
+				filtered = append(filtered, filter.NewVersionWithName(values["name"], values))
 			}
 		}
 	}

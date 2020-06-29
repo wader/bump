@@ -44,3 +44,7 @@ re:#a#b# -> re:#a#b#
 
 # does not support short syntax
 %a% -> error:no filter matches
+
+# transform with named submatch should change current key
+@commit|/^(.{12})/ -> key:commit|re:/^(.{12})/
+    a:commit=6e8e738ad208923de99951fe0b48239bfd864f28 -> a:commit=6e8e738ad208 6e8e738ad208
