@@ -124,11 +124,13 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 			if f.expand == "" {
 				filtered = append(filtered, v)
 			} else {
-				filtered = append(filtered,
-					filter.NewVersionWithName(
-						f.re.ReplaceAllLiteralString(value, f.expand),
-						v,
-					))
+				values := map[string]string{}
+				for k, v := range v {
+					values[k] = v
+				}
+				values[versionKey] = f.re.ReplaceAllLiteralString(value, f.expand)
+
+				filtered = append(filtered, filter.NewVersionWithName(values["name"], values))
 			}
 		}
 	} else {
@@ -144,23 +146,20 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 					values[k] = v
 				}
 
-				versionKeyFound := false
+				foundNamedSubexp := false
 				for smi := 0; smi < f.re.NumSubexp()+1; smi++ {
 					subexpName := subexpNames[smi]
 					if subexpName == "" || sm[smi*2] == -1 {
 						continue
 					}
 
-					if subexpName == versionKey {
-						versionKeyFound = true
-					}
-
+					foundNamedSubexp = true
 					values[subexpNames[smi]] = value[sm[smi*2]:sm[smi*2+1]]
 				}
 
 				if f.expand != "" {
 					values[versionKey] = string(f.re.ExpandString(nil, f.expand, value, sm))
-				} else if !versionKeyFound && sm[2] != -1 {
+				} else if !foundNamedSubexp && sm[2] != -1 {
 					// TODO: no name subexp, use first?
 					values[versionKey] = value[sm[2]:sm[3]]
 				}

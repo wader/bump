@@ -48,3 +48,13 @@ re:#a#b# -> re:#a#b#
 # transform with named submatch should change current key
 @commit|/^(.{12})/ -> key:commit|re:/^(.{12})/
     a:commit=6e8e738ad208923de99951fe0b48239bfd864f28 -> a:commit=6e8e738ad208 6e8e738ad208
+
+
+@commit|/1/a/|@name -> key:commit|re:/1/a/|key:name
+    abc:commit=1234 -> abc:commit=a234 abc
+
+@commit|/^(..).*/ -> key:commit|re:/^(..).*/
+    abc:commit=1234 -> abc:commit=12 12
+
+@commit|/^(?P<abc>..).*/ -> key:commit|re:/^(?P<abc>..).*/
+    abc:commit=1234 -> abc:abc=12:commit=1234 1234
