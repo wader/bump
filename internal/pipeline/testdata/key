@@ -1,0 +1,6 @@
+key:a -> key:a
+@abc -> key:abc
+    1:abc=a,2:abc=b -> 1:abc=a,2:abc=b a
+@a|@b -> key:a|key:b
+    1:a=a:b=b -> 1:a=a:b=b b
+key: -> error:should be key:name or @name
