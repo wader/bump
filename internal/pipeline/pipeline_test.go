@@ -182,7 +182,7 @@ func testPipelineTestCase(t *testing.T, tcs []testCase) {
 
 			for _, ft := range tc.testFilterCases {
 				t.Run(fmt.Sprintf("%d", ft.lineNr), func(t *testing.T) {
-					actualValue, actualVersions, err := p.Run(ft.versions, nil)
+					actualValue, actualVersions, err := p.Run(pipeline.DefaultVersionKey, ft.versions, nil)
 
 					if ft.expectedErr != "" {
 						if err == nil {
@@ -276,7 +276,7 @@ func TestRun(t *testing.T) {
 	p := testPipeline(t, "a|a")
 	expectedRun := filter.Versions{map[string]string{"name": "a"}}
 	expectedValue := "a"
-	actualValue, actualRun, runErr := p.Run(nil, nil)
+	actualValue, actualRun, runErr := p.Run(pipeline.DefaultVersionKey, nil, nil)
 
 	if runErr != nil {
 		t.Fatal(runErr)

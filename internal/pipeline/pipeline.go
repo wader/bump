@@ -8,6 +8,9 @@ import (
 	"github.com/wader/bump/internal/filter"
 )
 
+// DefaultVersionKey is the default start key for pipelines
+const DefaultVersionKey = "name"
+
 // Pipeline is a slice of filters
 type Pipeline []filter.Filter
 
@@ -47,9 +50,9 @@ func (pl Pipeline) String() string {
 }
 
 // Run pipeline
-func (pl Pipeline) Run(inVersions filter.Versions, logFn func(format string, v ...interface{})) (outValue string, outVersions filter.Versions, err error) {
+func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn func(format string, v ...interface{})) (outValue string, outVersions filter.Versions, err error) {
 	vs := inVersions
-	versionKey := "name"
+	versionKey := inVersionKey
 
 	for _, f := range pl {
 		before := vs
@@ -92,7 +95,7 @@ func (pl Pipeline) Run(inVersions filter.Versions, logFn func(format string, v .
 
 // Value run the pipeline and return one value or error
 func (pl Pipeline) Value(logFn func(format string, v ...interface{})) (value string, err error) {
-	v, pp, err := pl.Run(nil, logFn)
+	v, pp, err := pl.Run(DefaultVersionKey, nil, logFn)
 	if err != nil {
 		return "", err
 	}
