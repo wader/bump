@@ -180,7 +180,7 @@ func (cmd Command) run() []error {
 		}
 		for _, nf := range cmd.filters() {
 			if filterName == nf.Name {
-				fmt.Fprintf(cmd.OS.Stdout(), cmd.helpFilter(nf))
+				fmt.Fprint(cmd.OS.Stdout(), cmd.helpFilter(nf))
 				return nil
 			}
 		}
