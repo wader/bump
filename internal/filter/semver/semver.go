@@ -142,7 +142,15 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 	var latest *semverVersion
 	for i, v := range svs {
 		if f.constraint.Check(v.ver) {
-			latest = &svs[i]
+			if latest == nil || latest.ver.Compare(v.ver) == -1 {
+				latest = &svs[i]
+				continue
+			}
+
+			if len((*latest).v[versionKey]) <= len(v.v[versionKey]) {
+				latest = &svs[i]
+				continue
+			}
 		}
 	}
 	if latest == nil {

@@ -12,6 +12,12 @@ n.n.n-pre+build -> semver:n.n.n-pre+build
 semver:vn.n.n.n -> semver:vn.n.n.n
     1.2.3:v -> v1.2.3.n:v v1.2.3.n
 
+^3 -> semver:^3
+    3.12,3.9.1 -> 3.12 3.12
+    3.9.1,3.12 -> 3.12 3.12
+    3.12,3.12.0 -> 3.12.0 3.12.0
+    3.12.0,3.12 -> 3.12.0 3.12.0
+
 # TODO: constraintStr = "*" ? hmm
 
 n -> error:no filter matches
