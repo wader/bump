@@ -1,5 +1,5 @@
 # bump: golang /FROM golang:([\d.]+)/ docker:golang|^1
-FROM golang:1.15.3-buster AS builder
+FROM golang:1.15.4-buster AS builder
 
 # patch is used by naivediff package tests (compares diff output)
 RUN apt update && apt install -y patch
