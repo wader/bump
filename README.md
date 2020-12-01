@@ -122,7 +122,7 @@ FILTER
   semver:<constraint> | semver:<n.n.n-pre+build> | <constraint> | <n.n.n-pre+build>
   re:/<regexp>/ | re:/<regexp>/<template>/ | /<regexp>/ | /<regexp>/<template>/
   sort
-  key:name | @name
+  key:<name> | @<name>
   static:<name[:key=value:...]>,...
   err:<error>
 NAME is a configuration name
@@ -233,7 +233,7 @@ produces versions, `re` and `semver` transforms and filters.
 [semver](#semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`  
 [re](#re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`  
 [sort](#sort) `sort`  
-[key](#key) `key:name` or `@name`  
+[key](#key) `key:<name>` or `@<name>`  
 [static](#static) `static:<name[:key=value:...]>,...`  
 [err](#err) `err:<error>`  
 ### git
@@ -382,7 +382,7 @@ c
 
 ### key
 
-`key:name` or `@name`
+`key:<name>` or `@<name>`
 
 Change default key for a pipeline. Useful to have last in a pipeline
 to use git commit hash instead of tag name etc or in the middle of

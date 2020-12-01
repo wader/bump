@@ -12,7 +12,7 @@ const Name = "key"
 
 // Help text
 var Help = `
-key:name or @name
+key:<name> or @<name>
 
 Change default key for a pipeline. Useful to have last in a pipeline
 to use git commit hash instead of tag name etc or in the middle of
@@ -32,7 +32,7 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 
 	if prefix == Name {
 		if arg == "" {
-			return nil, fmt.Errorf("should be key:name or @name")
+			return nil, fmt.Errorf("should be key:<name> or @<name>")
 		}
 		return valueFilter{key: arg}, nil
 	} else if strings.HasPrefix(arg, "@") {

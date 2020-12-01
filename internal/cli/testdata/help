@@ -31,7 +31,7 @@ FILTER
   semver:<constraint> | semver:<n.n.n-pre+build> | <constraint> | <n.n.n-pre+build>
   re:/<regexp>/ | re:/<regexp>/<template>/ | /<regexp>/ | /<regexp>/<template>/
   sort
-  key:name | @name
+  key:<name> | @<name>
   static:<name[:key=value:...]>,...
   err:<error>
 NAME is a configuration name
