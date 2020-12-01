@@ -137,18 +137,18 @@ FROM alpine:3.9.3 AS builder
 ## Pipeline
 
 A pipeline consist of one or more filters executed in sequence. Usually
-it starts with a filter that produces versions from a source like a git repository.
-After that one or more filters can be used to transform, sort etc to narrow down to
-one version. If a pipeline ends up producing more than one version the first will be
-used.
+it starts with a filter that produces versions from some source like a git repository.
+After that one or more filters can select, transform and sort versions to narrow it
+down to one version. If a pipeline ends up producing more than one version the first
+will be used.
 
-A version is dictionary of values, the "name" is either the version number "1.2.3"
-or some symbolic name like "master". In addition a version can have other keys like
-"commit", "version" etc depending on the source. You can use the `key:name` or `@name`
-filter to.
+A version is a dictionary of key/value pairs, the "name" key is either the version number
+like "1.2.3" or some symbolic name like "master". In addition a version can have other keys
+like "commit", "version" etc depending on the source. You can use the key filter `key:<name>`
+or `@<name>` to use them.
 
-Default all filter that filters or sorts operate on the "default" key which is
-the "name" of a version. This can be changed along a pipeline using `key:name` or `@name`.
+Default all filters operate on the default key which is the "name". This can be changed
+along a pipeline using `key:<name>` or `@<name>`.
 
 ### Examples
 

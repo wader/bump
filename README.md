@@ -17,7 +17,7 @@ FROM alpine:3.9.3 AS builder
 
 # See possible updates
 $ bump check examples/Dockerfile
-alpine 3.12.0
+alpine 3.12.1
 
 # See what will be changed
 $ bump diff examples/Dockerfile
@@ -26,7 +26,7 @@ $ bump diff examples/Dockerfile
 @@ -1,2 +1,2 @@
  # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 -FROM alpine:3.9.3 AS builder
-+FROM alpine:3.12.0 AS builder
++FROM alpine:3.12.1 AS builder
 
 # Write changes
 $ bump update examples/Dockerfile
@@ -182,18 +182,18 @@ FROM alpine:3.9.3 AS builder
 ## Pipeline
 
 A pipeline consist of one or more filters executed in sequence. Usually
-it starts with a filter that produces versions from a source like a git repository.
-After that one or more filters can be used to transform, sort etc to narrow down to
-one version. If a pipeline ends up producing more than one version the first will be
-used.
+it starts with a filter that produces versions from some source like a git repository.
+After that one or more filters can select, transform and sort versions to narrow it
+down to one version. If a pipeline ends up producing more than one version the first
+will be used.
 
-A version is dictionary of values, the "name" is either the version number "1.2.3"
-or some symbolic name like "master". In addition a version can have other keys like
-"commit", "version" etc depending on the source. You can use the `key:name` or `@name`
-filter to.
+A version is a dictionary of key/value pairs, the "name" key is either the version number
+like "1.2.3" or some symbolic name like "master". In addition a version can have other keys
+like "commit", "version" etc depending on the source. You can use the key filter `key:<name>`
+or `@<name>` to use them.
 
-Default all filter that filters or sorts operate on the "default" key which is
-the "name" of a version. This can be changed along a pipeline using `key:name` or `@name`.
+Default all filters operate on the default key which is the "name". This can be changed
+along a pipeline using `key:<name>` or `@<name>`.
 
 ### Examples
 
@@ -204,15 +204,15 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.3
+4.3.1
 
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-7ab7d42cc98bcf0c5cda3f99eb35e20be1890646
+a3a26a98652fbdaa474e95cfbc12f68b64ca1e6f
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.14.4
+1.15.5
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
@@ -247,9 +247,9 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.27.0
+2.29.2
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.27.0
+2.29.2
 ```
 
 ### gitrefs
@@ -274,7 +274,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.12.0
+3.12.1
 ```
 
 ### svn
