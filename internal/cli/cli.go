@@ -247,11 +247,17 @@ func (cmd Command) run() []error {
 
 	switch command {
 	case "list":
-		for _, c := range bfs.SelectedChecks() {
+		for _, check := range bfs.SelectedChecks() {
 			if verbose {
-				fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s\n", c.File.Name, c.LineNr, c)
+				fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s\n", check.File.Name, check.PipelineLineNr, check)
+				for _, cs := range check.CommandShells {
+					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s command %s\n", cs.File.Name, cs.LineNr, check.Name, cs.Cmd)
+				}
+				for _, ca := range check.AfterShells {
+					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s after %s\n", ca.File.Name, ca.LineNr, check.Name, ca.Cmd)
+				}
 			} else {
-				fmt.Fprintf(cmd.OS.Stdout(), "%s\n", c.Name)
+				fmt.Fprintf(cmd.OS.Stdout(), "%s\n", check.Name)
 			}
 		}
 	case "current":
@@ -275,10 +281,16 @@ func (cmd Command) run() []error {
 			name string
 			text string
 		}
+		type run struct {
+			cmd string
+			env []string
+		}
 		type result struct {
 			diff        string
 			updates     []update
 			fileChanges []file
+			commandRuns []run
+			afterRuns   []run
 		}
 
 		var resultFn func(check *bump.Check, err error, duration time.Duration)
@@ -327,11 +339,21 @@ func (cmd Command) run() []error {
 				version: check.Latest,
 				changes: changes,
 			})
+
+			env := bfs.CommandEnv(check)
+			// TODO: refactor, bfs.Replace skip if there are commands
+			for _, cr := range check.CommandRuns {
+				r.commandRuns = append(r.commandRuns, run{cmd: cr, env: env})
+			}
+			for _, cr := range check.AfterRuns {
+				r.commandRuns = append(r.commandRuns, run{cmd: cr, env: env})
+			}
 		}
 
 		var diffs []string
 		for _, f := range bfs.Files {
 			newTextBuf := bfs.Replace(f)
+			// might return equal even if version has changed if checks has run commands
 			if bytes.Equal(f.Text, newTextBuf) {
 				continue
 			}
@@ -374,6 +396,22 @@ func (cmd Command) run() []error {
 			for _, f := range r.fileChanges {
 				if err := cmd.OS.WriteFile(f.name, []byte(f.text)); err != nil {
 					return []error{err}
+				}
+			}
+			for _, r := range r.commandRuns {
+				if verbose {
+					fmt.Fprintf(cmd.OS.Stdout(), "command: %s %s\n", strings.Join(r.env, " "), r.cmd)
+				}
+				if err := cmd.OS.Shell(r.cmd, r.env); err != nil {
+					return []error{fmt.Errorf("command: %s: %w", r.cmd, err)}
+				}
+			}
+			for _, r := range r.afterRuns {
+				if verbose {
+					fmt.Fprintf(cmd.OS.Stdout(), "after: %s %s\n", strings.Join(r.env, " "), r.cmd)
+				}
+				if err := cmd.OS.Shell(r.cmd, r.env); err != nil {
+					return []error{fmt.Errorf("after: %s: %w", r.cmd, err)}
 				}
 			}
 		}

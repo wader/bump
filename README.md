@@ -17,18 +17,19 @@ FROM alpine:3.9.3 AS builder
 
 # See possible updates
 $ bump check examples/Dockerfile
-alpine 3.12.1
+alpine 3.12.3
 
 # See what will be changed
 $ bump diff examples/Dockerfile
 --- examples/Dockerfile
 +++ examples/Dockerfile
-@@ -1,2 +1,2 @@
+@@ -1,3 +1,3 @@
  # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 -FROM alpine:3.9.3 AS builder
-+FROM alpine:3.12.1 AS builder
++FROM alpine:3.12.3 AS builder
+ 
 
-# Write changes
+# Write changes and run commands
 $ bump update examples/Dockerfile
 ```
 
@@ -64,6 +65,8 @@ Note that if you want bump PRs to trigger other actions like CI builds
 [you currently have to use a personal access token](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#about-workflow-events)
 with repo access and add it as a secret. For example
 add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
+
+See [Dockerfile](Dockerfile) for tools installed in the default image.
 
 ## Install
 
@@ -212,11 +215,44 @@ a3a26a98652fbdaa474e95cfbc12f68b64ca1e6f
 
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.15.5
+1.15.6
 
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
+```
+
+## Run shell command on update
+
+```
+bump: NAME [command|after] COMMAND
+```
+
+There two kinds of shell commands, `command` and `after`. `command` will be executed
+instead bump doing any changes and it is expected to do any changes. `after` will be executed
+after bump does any change. If you have multiple commands they will be executed in the same
+order as they are configured.
+
+Example Bumpfile using `command` to run `go get` to change `go.mod` and `go.sum`:
+```
+module program
+
+go 1.12
+
+require (
+  // bump: leaktest /github.com\/fortytw2\/leaktest v(.*)/ git:https://github.com/fortytw2/leaktest.git|^1
+  // bump: leaktest command go get github.com/fortytw2/leaktest@v$LATEST && go mod tidy
+  github.com/fortytw2/leaktest v1.2.0
+)
+```
+
+Example Bumpfile using `after` to run a script to update download hashes:
+```
+# bump: libvorbis /VORBIS_VERSION=([\d.]+)/ https://github.com/xiph/vorbis.git|*
+# bump: libvorbis after ./hashupdate Dockerfile VORBIS $LATEST
+ARG VORBIS_VERSION=1.3.7
+ARG VORBIS_URL="https://downloads.xiph.org/releases/vorbis/libvorbis-$VORBIS_VERSION.tar.gz"
+ARG VORBIS_SHA256=0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab
 ```
 
 ## Filters
@@ -247,9 +283,9 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.29.2
+2.30.0
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.29.2
+2.30.0
 ```
 
 ### gitrefs
@@ -274,7 +310,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.12.1
+3.12.3
 ```
 
 ### svn
@@ -432,5 +468,4 @@ test
 - Allow alternative regexp "/" delimiter in version match or maybe some simplified match syntax?
 - sort filter: make smarter? natural sort?
 - Some kind of cache to better handle multiple invocations
-- Post update/check hook script? make it possible to run go get, update hashes etc?
 - HTTP service to run pipelines?

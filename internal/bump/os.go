@@ -12,4 +12,5 @@ type OS interface {
 	WriteFile(filename string, data []byte) error
 	ReadFile(filename string) ([]byte, error)
 	Glob(pattern string) ([]string, error)
+	Shell(cmd string, env []string) error
 }

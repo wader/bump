@@ -176,6 +176,20 @@ func (cmd Command) run() []error {
 			fmt.Printf("  Wrote change to %s\n", f.Name)
 		}
 
+		env := bfs.CommandEnv(c)
+		for _, r := range c.CommandRuns {
+			fmt.Fprintf(cmd.OS.Stdout(), "command: %s %s\n", strings.Join(env, " "), r)
+			if err := cmd.OS.Shell(r, bfs.CommandEnv(c)); err != nil {
+				return []error{fmt.Errorf("command: %s: %w", r, err)}
+			}
+		}
+		for _, r := range c.AfterRuns {
+			fmt.Fprintf(cmd.OS.Stdout(), "after: %s %s\n", strings.Join(env, " "), r)
+			if err := cmd.OS.Shell(r, env); err != nil {
+				return []error{fmt.Errorf("after: %s: %w", r, err)}
+			}
+		}
+
 		title := templateReplacerFn(titleTemplate)
 		err = runCmds([][]string{
 			{"git", "diff"},

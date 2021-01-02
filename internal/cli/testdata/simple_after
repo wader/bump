@@ -1,0 +1,33 @@
+/a:
+bump: name /name: (1)/ static:2
+bump: name after cmd arg1 arg2
+name: 1
+$ bump update a
+/a:
+bump: name /name: (1)/ static:2
+bump: name after cmd arg1 arg2
+name: 2
+!cmd arg1 arg2
+NAME=name
+LATEST=2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+name after cmd arg1 arg2
+a
+/a:
+name: 1
+$ bump update
+/a:
+name: 2
+!cmd arg1 arg2
+NAME=name
+LATEST=2
+---
+/Bumpfile:
+name /name: (1)/ static:1
+name after cmd arg1 arg2
+a
+/a:
+name: 1
+$ bump update

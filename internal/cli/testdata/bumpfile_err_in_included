@@ -4,4 +4,4 @@ a
 bump: err
 $ bump list
 >stderr:
-a:1: expected \s
+a:1: invalid name and arguments: "err"

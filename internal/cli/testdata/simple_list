@@ -1,5 +1,9 @@
 /a:
 bump: name /name: (1)/ static:2
+bump: name command cmd1
+bump: name command cmd2
+bump: name after after1
+bump: name after after2
 name: 1
 $ bump list a
 >stdout:
@@ -7,9 +11,45 @@ name
 ---
 /Bumpfile:
 name /name: (1)/ static:2
+name command cmd1
+name command cmd2
+name after after1
+name after after2
 a
 /a:
 name: 1
 $ bump list
 >stdout:
 name
+---
+/a:
+bump: name /name: (1)/ static:2
+bump: name command cmd1
+bump: name command cmd2
+bump: name after after1
+bump: name after after2
+name: 1
+$ bump -v list a
+>stdout:
+a:1: name /name: (1)/ static:2
+a:2: name command cmd1
+a:3: name command cmd2
+a:4: name after after1
+a:5: name after after2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+name command cmd1
+name command cmd2
+name after after1
+name after after2
+a
+/a:
+name: 1
+$ bump -v list
+>stdout:
+Bumpfile:1: name /name: (1)/ static:2
+Bumpfile:2: name command cmd1
+Bumpfile:3: name command cmd2
+Bumpfile:4: name after after1
+Bumpfile:5: name after after2

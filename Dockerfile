@@ -17,7 +17,13 @@ RUN cmd/bump/main_test.sh /bump
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 FROM alpine:3.12.3
 # git is used by github action code
-RUN apk add --no-cache git
+# curl for convenience in run commands
+# go to do go mod things in run commands
+# TODO: install more tools or split into multiple images?
+RUN apk add --no-cache \
+    git \
+    curl \
+    go
 COPY --from=builder /bump /usr/local/bin
 RUN ["/usr/local/bin/bump", "version"]
 RUN ["/usr/local/bin/bump", "pipeline", "git:https://github.com/torvalds/linux.git|*"]

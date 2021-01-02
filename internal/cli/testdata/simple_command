@@ -1,0 +1,28 @@
+# command assumes the external command will do the replacement
+/a:
+bump: name /name: (1)/ static:2
+bump: name command cmd arg1 arg2
+name: 1
+$ bump update a
+!cmd arg1 arg2
+NAME=name
+LATEST=2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+name command cmd arg1 arg2
+a
+/a:
+name: 1
+$ bump update
+!cmd arg1 arg2
+NAME=name
+LATEST=2
+---
+/Bumpfile:
+name /name: (1)/ static:1
+name command cmd arg1 arg2
+a
+/a:
+name: 1
+$ bump update

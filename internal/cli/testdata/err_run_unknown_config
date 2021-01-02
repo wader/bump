@@ -1,0 +1,6 @@
+/Bumpfile:
+name /name: (1)/ static:1
+name abc cmd arg1 arg2
+$ bump list
+>stderr:
+Bumpfile:2: expected command, after or link: "name abc cmd arg1 arg2"

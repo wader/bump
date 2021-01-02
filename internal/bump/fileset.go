@@ -18,16 +18,35 @@ import (
 
 var bumpRe = regexp.MustCompile(`bump:\s*(\w.*)`)
 
+type CheckLink struct {
+	Name string
+	URL  string
+}
+
+type CheckShell struct {
+	Cmd    string
+	File   *File
+	LineNr int
+}
+
 // Check is a bump config line
 type Check struct {
-	File      *File
-	Line      string
-	LineNr    int
-	Name      string
-	Pipeline  pipeline.Pipeline
-	CurrentRE *regexp.Regexp
-	Latest    string
-	Currents  []Current
+	File *File
+	Name string
+
+	// bump: <name> /<re>/ <pipeline>
+	PipelineLineNr int
+	CurrentRE      *regexp.Regexp
+	Pipeline       pipeline.Pipeline
+	// bump: <name> command ...
+	CommandShells []CheckShell
+	// bump: <name> after ...
+	AfterShells []CheckShell
+	// bump: <name> link <title> <url>
+	Links []CheckLink
+
+	Latest   string
+	Currents []Current
 }
 
 // HasUpdate returns true if any current version does not match Latest
@@ -111,9 +130,9 @@ func (b *FileSet) addBumpfile(os OS, name string) error {
 		return err
 	}
 	file := &File{Name: name, Text: text, HasNoVersions: true}
+	b.Files = append(b.Files, file)
 
 	lineNr := 0
-	var checks []*Check
 	for _, l := range strings.Split(string(text), "\n") {
 		lineNr++
 		if strings.HasPrefix(l, "#") || strings.TrimSpace(l) == "" {
@@ -132,16 +151,13 @@ func (b *FileSet) addBumpfile(os OS, name string) error {
 			continue
 		}
 
-		check, err := parseCheckLine(l, b.Filters)
+		err := b.parseCheckLine(file, lineNr, l, b.Filters)
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
 		}
-		check.File = file
-		check.LineNr = lineNr
-		checks = append(checks, check)
 	}
 
-	return b.addChecks(file, checks)
+	return nil
 }
 
 func (b *FileSet) addFile(os OS, name string) error {
@@ -150,29 +166,12 @@ func (b *FileSet) addFile(os OS, name string) error {
 		return err
 	}
 	file := &File{Name: name, Text: text}
+	b.Files = append(b.Files, file)
 
-	checks, err := parseFile(file, b.Filters)
+	err = b.parseFile(file, b.Filters)
 	if err != nil {
 		return err
 	}
-
-	return b.addChecks(file, checks)
-}
-
-func (b *FileSet) addChecks(file *File, checks []*Check) error {
-	for _, c := range checks {
-		file.HasConfig = true
-
-		for _, bc := range b.Checks {
-			if c.Name == bc.Name {
-				return fmt.Errorf("%s:%d: %s already used at %s:%d",
-					c.File.Name, c.LineNr, c.Name, bc.File.Name, bc.LineNr)
-			}
-		}
-		b.Checks = append(b.Checks, c)
-	}
-
-	b.Files = append(b.Files, file)
 
 	return nil
 }
@@ -227,7 +226,7 @@ func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Du
 		c := selectedChecks[r.i]
 		c.Latest = r.latest
 		if r.err != nil {
-			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.LineNr, c.Name, r.err))
+			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.PipelineLineNr, c.Name, r.err))
 		}
 
 		if resultFn != nil {
@@ -280,7 +279,7 @@ func (b *FileSet) Lint() []error {
 		if len(c.Currents) != 0 {
 			continue
 		}
-		errs = append(errs, fmt.Errorf("%s:%d: %s has no current version matches", c.File.Name, c.LineNr, c.Name))
+		errs = append(errs, fmt.Errorf("%s:%d: %s has no current version matches", c.File.Name, c.PipelineLineNr, c.Name))
 	}
 
 	for _, f := range b.Files {
@@ -311,8 +310,8 @@ func (b *FileSet) Lint() []error {
 					}
 
 					errs = append(errs, fmt.Errorf("%s:%d:%s has overlapping matches with %s:%d:%s at %s:%d",
-						ca.File.Name, ca.LineNr, ca.Name,
-						cb.File.Name, cb.LineNr, cb.Name,
+						ca.File.Name, ca.PipelineLineNr, ca.Name,
+						cb.File.Name, cb.PipelineLineNr, cb.Name,
 						cca.File.Name, cca.LineNr))
 				}
 			}
@@ -337,8 +336,14 @@ func (b *FileSet) Replace(file *File) []byte {
 
 	selectedChecks := b.SelectedChecks()
 	var replacers []rereplacer.Replace
-	for i := range selectedChecks {
-		c := selectedChecks[i]
+	for _, c := range selectedChecks {
+		// skip if check has run commands
+		if len(c.CommandShells) > 0 {
+			continue
+		}
+
+		// new variable for the replacer fn closure
+		c := c
 		replacers = append(replacers, rereplacer.Replace{
 			Re: c.CurrentRE,
 			Fn: func(b []byte, sm []int) []byte {
@@ -360,60 +365,141 @@ func (b *FileSet) Replace(file *File) []byte {
 	return rereplacer.Replacer(replacers).Replace(file.Text)
 }
 
-func parseFile(file *File, filters []filter.NamedFilter) ([]*Check, error) {
-	var checks []*Check
+func (b *FileSet) CommandEnv(check *Check) []string {
+	return []string{
+		fmt.Sprintf("NAME=%s", check.Name),
+		fmt.Sprintf("LATEST=%s", check.Latest),
+	}
+}
+
+func (b *FileSet) parseFile(file *File, filters []filter.NamedFilter) error {
 	locLine := locline.New(file.Text)
 
 	for _, sm := range bumpRe.FindAllSubmatchIndex(file.Text, -1) {
 		lineNr := locLine.Line(sm[0])
 		checkLine := strings.TrimSpace(string(file.Text[sm[2]:sm[3]]))
-		check, err := parseCheckLine(checkLine, filters)
+		err := b.parseCheckLine(file, lineNr, checkLine, filters)
 		if err != nil {
-			return nil, fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
+			return fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
 		}
-
-		check.File = file
-		check.LineNr = lineNr
-		checks = append(checks, check)
 	}
 
-	return checks, nil
+	return nil
 }
 
-func parseCheckLine(line string, filters []filter.NamedFilter) (*Check, error) {
-	var name,
-		currentReStr,
-		pipelineStr string
-	var pl pipeline.Pipeline
-	var err error
+func (b *FileSet) findCheckByName(name string) *Check {
+	for _, c := range b.Checks {
+		if c.Name == name {
+			return c
+		}
+	}
+	return nil
+}
 
-	tokens := []lexer.Token{
-		{Name: "name", Dest: &name, Fn: lexer.Re(regexp.MustCompile(`[[:alnum:]-_+.]`))},
-		{Fn: lexer.Re(regexp.MustCompile(`\s`))},
-		{Name: "re", Dest: &currentReStr, Fn: lexer.Quoted(`/`)},
-		{Fn: lexer.Re(regexp.MustCompile(`\s`))},
-		{Name: "pipeline", Dest: &pipelineStr, Fn: lexer.Rest(1)},
-	}
+func (b *FileSet) parseCheckLine(file *File, lineNr int, line string, filters []filter.NamedFilter) error {
+	file.HasConfig = true
 
-	if _, err := lexer.Tokenize(line, tokens); err != nil {
-		return nil, err
-	}
-	pl, err = pipeline.New(filters, pipelineStr)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", pipelineStr, err)
-	}
-	currentRe, err := regexp.Compile(currentReStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid current version regexp: %q", currentReStr)
-	}
-	if currentRe.NumSubexp() != 1 {
-		return nil, fmt.Errorf("regexp must have one submatch: %q", currentReStr)
+	nameRest := strings.SplitN(line, " ", 2)
+	if len(nameRest) != 2 {
+		return fmt.Errorf("invalid name and arguments: %q", line)
 	}
 
-	return &Check{
-		Line:      line,
-		Name:      name,
-		CurrentRE: currentRe,
-		Pipeline:  pl,
-	}, nil
+	name, rest := strings.TrimSpace(nameRest[0]), nameRest[1]
+	if name == "" {
+		return fmt.Errorf("name is empty")
+	}
+
+	if strings.HasPrefix(rest, "/") {
+		// bump: <name> /<re>/ <pipeline>
+		var currentReStr string
+		var pipelineStr string
+
+		tokens := []lexer.Token{
+			{Name: "re", Dest: &currentReStr, Fn: lexer.Quoted(`/`)},
+			{Fn: lexer.Re(regexp.MustCompile(`\s`))},
+			{Name: "pipeline", Dest: &pipelineStr, Fn: lexer.Rest(1)},
+		}
+
+		if _, err := lexer.Tokenize(rest, tokens); err != nil {
+			return err
+		}
+		pl, err := pipeline.New(filters, pipelineStr)
+		if err != nil {
+			return fmt.Errorf("%s: %w", pipelineStr, err)
+		}
+		currentRe, err := regexp.Compile(currentReStr)
+		if err != nil {
+			return fmt.Errorf("invalid current version regexp: %q", currentReStr)
+		}
+		if currentRe.NumSubexp() != 1 {
+			return fmt.Errorf("regexp must have one submatch: %q", currentReStr)
+		}
+
+		check := &Check{
+			File:           file,
+			Name:           name,
+			CurrentRE:      currentRe,
+			PipelineLineNr: lineNr,
+			Pipeline:       pl,
+		}
+
+		for _, bc := range b.Checks {
+			if check.Name == bc.Name {
+				return fmt.Errorf("%s already used at %s:%d",
+					check.Name, bc.File.Name, bc.PipelineLineNr)
+			}
+		}
+
+		b.Checks = append(b.Checks, check)
+
+		return nil
+	} else {
+		check := b.findCheckByName(name)
+		if check == nil {
+			return fmt.Errorf("%s has not been defined yet", name)
+		}
+
+		kindReset := strings.SplitN(rest, " ", 2)
+		if len(kindReset) != 2 {
+			return fmt.Errorf("invalid kind and arguments: %q", line)
+		}
+		kind, rest := strings.TrimSpace(kindReset[0]), kindReset[1]
+
+		switch kind {
+		case "command":
+			// bump: <name> command ...
+			check.CommandShells = append(check.CommandShells, CheckShell{
+				Cmd:    rest,
+				File:   file,
+				LineNr: lineNr,
+			})
+		case "after":
+			// bump: <name> after ...
+			check.AfterShells = append(check.AfterShells, CheckShell{
+				Cmd:    rest,
+				File:   file,
+				LineNr: lineNr,
+			})
+		case "link":
+			// bump: <name> link <link-name> <link>
+
+			var linkName string
+			var linkURL string
+			tokens := []lexer.Token{
+				{Name: "name", Dest: &linkName, Fn: lexer.Quoted(`"`)},
+				{Fn: lexer.Re(regexp.MustCompile(`\s`))},
+				{Name: "URL", Dest: &linkURL, Fn: lexer.Rest(1)},
+			}
+
+			if _, err := lexer.Tokenize(rest, tokens); err != nil {
+				return err
+			}
+
+			check.Links = append(check.Links, CheckLink{Name: linkName, URL: linkURL})
+		default:
+			return fmt.Errorf("expected command, after or link: %q", line)
+		}
+	}
+
+	return nil
 }

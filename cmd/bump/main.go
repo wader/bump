@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/wader/bump/internal/cli"
@@ -49,6 +50,16 @@ func (OS) ReadFile(filename string) ([]byte, error) {
 // Glob returns list of matched os files
 func (OS) Glob(pattern string) ([]string, error) {
 	return filepath.Glob(pattern)
+}
+
+// Shell runs a sh command
+func (OS) Shell(cmd string, env []string) error {
+	// TODO: non-sh OS:s?
+	c := exec.Command("sh", "-c", cmd)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.Env = append(os.Environ(), env...)
+	return c.Run()
 }
 
 func main() {

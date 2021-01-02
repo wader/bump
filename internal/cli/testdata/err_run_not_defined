@@ -1,0 +1,5 @@
+/Bumpfile:
+name command cmd arg1 arg2
+$ bump list
+>stderr:
+Bumpfile:1: name has not been defined yet
