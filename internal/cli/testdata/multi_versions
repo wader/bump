@@ -1,0 +1,10 @@
+/a:
+bump: namea /namea: (1)/ static:2
+bump: nameb /nameb: (1)/ static:3
+/b:
+namea: 1
+nameb: 1
+$ bump update a b
+/b:
+namea: 2
+nameb: 3
