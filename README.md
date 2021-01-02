@@ -99,6 +99,7 @@ OPTIONS:
   -e                    Comma separated names to exclude
   -f                    Bumpfile to read (Bumpfile)
   -i                    Comma separated names to include
+  -r                    Run update commands (false)
   -v                    Verbose (false)
 
 COMMANDS:
@@ -153,6 +154,10 @@ read embedded configuration from.
 ```
 # comment
 NAME /REGEXP/ PIPELINE
+NAME [command|after] COMMAND
+NAME message MESSAGE
+NAME link "TITLE" URL
+filename
 glob/*
 ```
 
@@ -161,6 +166,8 @@ Example Bumpfile:
 ```
 # a bump configuration
 alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+alpine message Make sure to also test with abc
+alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 # read configuration, check and update version in Dockerfile
 Dockerfile
 ```
@@ -179,6 +186,50 @@ Example Dockerfile with embedded configuration:
 ```
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 FROM alpine:3.9.3 AS builder
+```
+
+### Run shell command on update
+
+```
+bump: NAME [command|after] COMMAND
+```
+
+There are two kinds of shell commands, `command` and `after`. `command` will be executed
+instead bump doing the changes. `after` will always be executed after bump has done any changes.
+If you have multiple commands they will be executed in the same order as they are configured.
+
+Example Bumpfile using `command` to run `go get` to change `go.mod` and `go.sum`:
+```
+module program
+
+go 1.12
+
+require (
+  // bump: leaktest /github.com\/fortytw2\/leaktest v(.*)/ git:https://github.com/fortytw2/leaktest.git|^1
+  // bump: leaktest command go get github.com/fortytw2/leaktest@v$LATEST && go mod tidy
+  github.com/fortytw2/leaktest v1.2.0
+)
+```
+
+Example Bumpfile using `after` to run a script to update download hashes:
+```
+libvorbis after ./hashupdate Dockerfile VORBIS $LATEST
+```
+
+### Commit and pull request messages sand links
+
+```
+NAME message MESSAGE
+NAME link "TITLE" URL
+```
+
+You can include messages and links in commit messages and pull requests by using one or
+more `message` and `link` configurations.
+
+Example:
+```
+libvorbis link "CHANGES file" https://github.com/xiph/vorbis/blob/master/CHANGES
+libvorbis link "Source diff $CURRENT..$LATEST" https://github.com/xiph/vorbis/compare/v$CURRENT..v$LATEST
 ```
 
 
@@ -220,39 +271,6 @@ $ bump pipeline 'docker:golang|^1'
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
-```
-
-## Run shell command on update
-
-```
-bump: NAME [command|after] COMMAND
-```
-
-There two kinds of shell commands, `command` and `after`. `command` will be executed
-instead bump doing any changes and it is expected to do any changes. `after` will be executed
-after bump does any change. If you have multiple commands they will be executed in the same
-order as they are configured.
-
-Example Bumpfile using `command` to run `go get` to change `go.mod` and `go.sum`:
-```
-module program
-
-go 1.12
-
-require (
-  // bump: leaktest /github.com\/fortytw2\/leaktest v(.*)/ git:https://github.com/fortytw2/leaktest.git|^1
-  // bump: leaktest command go get github.com/fortytw2/leaktest@v$LATEST && go mod tidy
-  github.com/fortytw2/leaktest v1.2.0
-)
-```
-
-Example Bumpfile using `after` to run a script to update download hashes:
-```
-# bump: libvorbis /VORBIS_VERSION=([\d.]+)/ https://github.com/xiph/vorbis.git|*
-# bump: libvorbis after ./hashupdate Dockerfile VORBIS $LATEST
-ARG VORBIS_VERSION=1.3.7
-ARG VORBIS_URL="https://downloads.xiph.org/releases/vorbis/libvorbis-$VORBIS_VERSION.tar.gz"
-ARG VORBIS_SHA256=0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab
 ```
 
 ## Filters
@@ -458,6 +476,7 @@ test
 
 ## Ideas, TODOs and known issues
 
+- GitHub action: PR labels
 - GitHub action: some kind of tests
 - Proper version number for bump itself
 - How to use with hg

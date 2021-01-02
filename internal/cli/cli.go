@@ -245,6 +245,12 @@ func (cmd Command) run() []error {
 				for _, ca := range check.AfterShells {
 					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s after %s\n", ca.File.Name, ca.LineNr, check.Name, ca.Cmd)
 				}
+				for _, m := range check.Messages {
+					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s message %s\n", m.File.Name, m.LineNr, check.Name, m.Message)
+				}
+				for _, l := range check.Links {
+					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s link %q %s\n", l.File.Name, l.LineNr, check.Name, l.Title, l.URL)
+				}
 			} else {
 				fmt.Fprintf(cmd.OS.Stdout(), "%s\n", check.Name)
 			}

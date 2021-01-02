@@ -19,14 +19,22 @@ import (
 var bumpRe = regexp.MustCompile(`bump:\s*(\w.*)`)
 
 type CheckLink struct {
-	Name string
-	URL  string
+	Title  string
+	URL    string
+	File   *File
+	LineNr int
 }
 
 type CheckShell struct {
 	Cmd    string
 	File   *File
 	LineNr int
+}
+
+type CheckMessage struct {
+	Message string
+	File    *File
+	LineNr  int
 }
 
 // Check is a bump config line
@@ -44,6 +52,8 @@ type Check struct {
 	CommandShells []CheckShell
 	// bump: <name> after ...
 	AfterShells []CheckShell
+	// bump: <name> message <title> <url>
+	Messages []CheckMessage
 	// bump: <name> link <title> <url>
 	Links []CheckLink
 
@@ -479,13 +489,19 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 				File:   file,
 				LineNr: lineNr,
 			})
+		case "message":
+			// bump: <name> message ...
+			check.Messages = append(check.Messages, CheckMessage{
+				Message: rest,
+				File:    file,
+				LineNr:  lineNr,
+			})
 		case "link":
-			// bump: <name> link <link-name> <link>
-
-			var linkName string
+			// bump: <name> link "<title>" <url>
+			var linkTitle string
 			var linkURL string
 			tokens := []lexer.Token{
-				{Name: "name", Dest: &linkName, Fn: lexer.Quoted(`"`)},
+				{Name: "name", Dest: &linkTitle, Fn: lexer.Quoted(`"`)},
 				{Fn: lexer.Re(regexp.MustCompile(`\s`))},
 				{Name: "URL", Dest: &linkURL, Fn: lexer.Rest(1)},
 			}
@@ -494,7 +510,12 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 				return err
 			}
 
-			check.Links = append(check.Links, CheckLink{Name: linkName, URL: linkURL})
+			check.Links = append(check.Links, CheckLink{
+				Title:  linkTitle,
+				URL:    linkURL,
+				File:   file,
+				LineNr: lineNr,
+			})
 		default:
 			return fmt.Errorf("expected command, after or link: %q", line)
 		}

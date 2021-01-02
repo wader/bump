@@ -4,6 +4,10 @@ bump: name command cmd1
 bump: name command cmd2
 bump: name after after1
 bump: name after after2
+bump: name message msg1
+bump: name message msg1
+bump: name link "title 1" url1
+bump: name link "title 1" url2
 name: 1
 $ bump list a
 >stdout:
@@ -15,6 +19,10 @@ name command cmd1
 name command cmd2
 name after after1
 name after after2
+name message msg1
+name message msg1
+name link "title 1" url1
+name link "title 1" url2
 a
 /a:
 name: 1
@@ -28,6 +36,10 @@ bump: name command cmd1
 bump: name command cmd2
 bump: name after after1
 bump: name after after2
+bump: name message msg1
+bump: name message msg1
+bump: name link "title 1" url1
+bump: name link "title 1" url2
 name: 1
 $ bump -v list a
 >stdout:
@@ -36,6 +48,10 @@ a:2: name command cmd1
 a:3: name command cmd2
 a:4: name after after1
 a:5: name after after2
+a:6: name message msg1
+a:7: name message msg1
+a:8: name link "title 1" url1
+a:9: name link "title 1" url2
 ---
 /Bumpfile:
 name /name: (1)/ static:2
@@ -43,6 +59,10 @@ name command cmd1
 name command cmd2
 name after after1
 name after after2
+name message msg1
+name message msg1
+name link "title 1" url1
+name link "title 1" url2
 a
 /a:
 name: 1
@@ -53,3 +73,7 @@ Bumpfile:2: name command cmd1
 Bumpfile:3: name command cmd2
 Bumpfile:4: name after after1
 Bumpfile:5: name after after2
+Bumpfile:6: name message msg1
+Bumpfile:7: name message msg1
+Bumpfile:8: name link "title 1" url1
+Bumpfile:9: name link "title 1" url2

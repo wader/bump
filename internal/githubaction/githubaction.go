@@ -1,7 +1,9 @@
 package githubaction
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"strings"
 
 	"github.com/wader/bump/internal/bump"
@@ -9,21 +11,66 @@ import (
 	"github.com/wader/bump/internal/github"
 )
 
-// CheckTemplateReplaceFn buils a function for doing template replacing for check
-func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
+// CheckTemplateReplaceFn builds a function for doing template replacing for check
+func CheckTemplateReplaceFn(c *bump.Check) func(s string) (string, error) {
+	varReplacer := strings.NewReplacer(
+		"$NAME", c.Name,
+		"$LATEST", c.Latest,
+		// TODO: this might be wrong if there are multiple current versions
+		"$CURRENT", c.Currents[0].Version,
+	)
+
 	var currentVersions []string
 	for _, c := range c.Currents {
 		currentVersions = append(currentVersions, c.Version)
 	}
+	var messages []string
+	for _, m := range c.Messages {
+		messages = append(messages, varReplacer.Replace(m.Message))
+	}
+	type link struct {
+		Title string
+		URL   string
+	}
+	var links []link
+	for _, l := range c.Links {
+		links = append(links, link{
+			Title: varReplacer.Replace(l.Title),
+			URL:   varReplacer.Replace(l.URL),
+		})
+	}
 
-	r := strings.NewReplacer(
-		"$NAME", c.Name,
-		"$LATEST", c.Latest,
-		"$CURRENT", strings.Join(currentVersions, ", "),
-	)
+	tmplData := struct {
+		Name     string
+		Current  []string
+		Messages []string
+		Latest   string
+		Links    []link
+	}{
+		Name:     c.Name,
+		Current:  currentVersions,
+		Messages: messages,
+		Latest:   c.Latest,
+		Links:    links,
+	}
 
-	return func(s string) string {
-		return r.Replace(s)
+	return func(s string) (string, error) {
+		tmpl := template.New("")
+		tmpl = tmpl.Funcs(template.FuncMap{
+			"join": strings.Join,
+		})
+		tmpl, err := tmpl.Parse(s)
+		if err != nil {
+			return "", err
+		}
+
+		execBuf := &bytes.Buffer{}
+		err = tmpl.Execute(execBuf, tmplData)
+		if err != nil {
+			return "", err
+		}
+
+		return execBuf.String(), nil
 	}
 }
 
@@ -65,26 +112,31 @@ func (cmd Command) run() []error {
 		return []error{fmt.Errorf("GITHUB_SHA not set")}
 	}
 
-	bumpfile, err := ae.Input("bumpfile")
-	if err != nil {
-		return []error{err}
-	}
 	files, _ := ae.Input("bump_files")
-	titleTemplate, err := ae.Input("title_template")
-	if err != nil {
-		return []error{err}
-	}
-	branchTemplate, err := ae.Input("branch_template")
-	if err != nil {
-		return []error{err}
-	}
-	userName, err := ae.Input("user_name")
-	if err != nil {
-		return []error{err}
-	}
-	userEmail, err := ae.Input("user_email")
-	if err != nil {
-		return []error{err}
+	var bumpfile,
+		titleTemplate,
+		commitBodyTemplate,
+		prBodyTemplate,
+		branchTemplate,
+		userName,
+		userEmail string
+	for _, v := range []struct {
+		s *string
+		n string
+	}{
+		{&bumpfile, "bumpfile"},
+		{&titleTemplate, "title_template"},
+		{&commitBodyTemplate, "commit_body_template"},
+		{&prBodyTemplate, "pr_body_template"},
+		{&branchTemplate, "branch_template"},
+		{&userName, "user_name"},
+		{&userEmail, "user_email"},
+	} {
+		s, err := ae.Input(v.n)
+		if err != nil {
+			return []error{err}
+		}
+		*v.s = s
 	}
 
 	pushURL := fmt.Sprintf("https://%s:%s@github.com/%s.git", ae.Actor, ae.Client.Token, ae.Repository)
@@ -128,7 +180,10 @@ func (cmd Command) run() []error {
 
 		templateReplacerFn := CheckTemplateReplaceFn(c)
 
-		branchName := templateReplacerFn(branchTemplate)
+		branchName, err := templateReplacerFn(branchTemplate)
+		if err != nil {
+			return []error{fmt.Errorf("branch template error: %w", err)}
+		}
 		if err := github.IsValidBranchName(branchName); err != nil {
 			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}
 		}
@@ -167,11 +222,23 @@ func (cmd Command) run() []error {
 			}
 		}
 
-		title := templateReplacerFn(titleTemplate)
+		title, err := templateReplacerFn(titleTemplate)
+		if err != nil {
+			return []error{fmt.Errorf("title template error: %w", err)}
+		}
+		commitBody, err := templateReplacerFn(commitBodyTemplate)
+		if err != nil {
+			return []error{fmt.Errorf("title template error: %w", err)}
+		}
+		prBody, err := templateReplacerFn(prBodyTemplate)
+		if err != nil {
+			return []error{fmt.Errorf("title template error: %w", err)}
+		}
+
 		err = cmd.runExecs([][]string{
 			{"git", "diff"},
 			{"git", "add", "--update"},
-			{"git", "commit", "--message", title},
+			{"git", "commit", "--message", title, "--message", commitBody},
 			// force so if for some reason there was an existing closed update PR with the same name
 			{"git", "push", "--force", "origin", "HEAD:refs/heads/" + branchName},
 		})
@@ -179,12 +246,13 @@ func (cmd Command) run() []error {
 			return []error{err}
 		}
 
-		fmt.Printf("  Commited and pushed\n")
+		fmt.Printf("  Committed and pushed\n")
 
 		newPr, err := ae.RepoRef.CreatePullRequest(github.NewPullRequest{
 			Base:  ae.Ref,
 			Head:  ae.Owner + ":" + branchName,
 			Title: title,
+			Body:  &prBody,
 		})
 		if err != nil {
 			return []error{err}
