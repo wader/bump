@@ -19,7 +19,7 @@ func TestCheckTemplateReplaceFn(t *testing.T) {
 
 	tf := githubaction.CheckTemplateReplaceFn(c)
 	expected := "Update aaa from 1, 2 to 3"
-	actual := tf("Update $name from $current to $version")
+	actual := tf("Update $NAME from $CURRENT to $LATEST")
 	if expected != actual {
 		t.Errorf("expected %q, got %q", expected, actual)
 	}

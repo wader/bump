@@ -12,16 +12,16 @@ inputs:
     default: 'Bumpfile'
   files:
     description: 'Files with embedded configuration or versions to update'
-    required: False
+    required: false
     default: ''
   title_template:
     description: 'Commit and pull request title template'
     required: false
-    default: 'Update $name from $current to $version'
+    default: 'Update $NAME from $CURRENT to $LATEST'
   branch_template:
     description: 'Pull requests branch name template'
     required: false
-    default: 'bump-$name-$version'
+    default: 'bump-$NAME-$LATEST'
   user_name:
     description: 'Commit user name'
     required: false

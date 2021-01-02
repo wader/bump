@@ -34,9 +34,9 @@ func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
 	}
 
 	r := strings.NewReplacer(
-		"$name", c.Name,
-		"$version", c.Latest,
-		"$current", strings.Join(currentVersions, ", "),
+		"$NAME", c.Name,
+		"$LATEST", c.Latest,
+		"$CURRENT", strings.Join(currentVersions, ", "),
 	)
 
 	return func(s string) string {
