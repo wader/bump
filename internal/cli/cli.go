@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter"
 	"github.com/wader/bump/internal/filter/all"
-	"github.com/wader/bump/internal/naivediff"
 	"github.com/wader/bump/internal/pipeline"
 )
 
@@ -337,11 +337,18 @@ func (cmd Command) run() []error {
 			}
 			newText := string(newTextBuf)
 
-			diffs = append(diffs, cmd.formatDiff(
-				f.Name,
-				f.Name,
-				naivediff.Diff(string(f.Text), newText, 3),
-			))
+			udiff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(string(f.Text)),
+				B:        difflib.SplitLines(newText),
+				FromFile: f.Name,
+				ToFile:   f.Name,
+				Context:  3,
+			})
+			if err != nil {
+				return []error{err}
+			}
+
+			diffs = append(diffs, udiff)
 
 			r.fileChanges = append(r.fileChanges, file{
 				name: f.Name,

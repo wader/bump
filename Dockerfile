@@ -1,7 +1,7 @@
 # bump: golang /FROM golang:([\d.]+)/ docker:golang|^1
 FROM golang:1.15.6-buster AS builder
 
-# patch is used by naivediff package tests (compares diff output)
+# patch is used by cmd/bump/main_test.sh to test diff
 RUN apt update && apt install -y patch
 
 ARG GO111MODULE=on

@@ -3,6 +3,8 @@ package deepequal
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/pmezard/go-difflib/difflib"
 )
 
 type tf interface {
@@ -11,23 +13,22 @@ type tf interface {
 }
 
 func testDeepEqual(fn func(format string, args ...interface{}), name string, expected interface{}, actual interface{}) {
-	expectedStr := fmt.Sprintf("%#v", expected)
-	actualStr := fmt.Sprintf("%#v", actual)
+	expectedStr := fmt.Sprintf("%s", expected)
+	actualStr := fmt.Sprintf("%s", actual)
+
 	if !reflect.DeepEqual(expected, actual) {
-		diff := ""
-		for i := len(diff); i < len(expectedStr) && i < len(actualStr); i++ {
-			if expectedStr[i] != actualStr[i] {
-				diff += "^"
-			} else {
-				diff += " "
-			}
+		diff := difflib.UnifiedDiff{
+			A:        difflib.SplitLines(expectedStr),
+			B:        difflib.SplitLines(actualStr),
+			FromFile: fmt.Sprintf("%s expected", name),
+			ToFile:   fmt.Sprintf("%s actual", name),
+			Context:  3,
 		}
-		fn(`
-%s
-expected: %s
-  actual: %s
-    diff: %s`[1:],
-			name, expectedStr, actualStr, diff)
+		udiff, err := difflib.GetUnifiedDiffString(diff)
+		if err != nil {
+			panic(err)
+		}
+		fn("\n%s", udiff)
 	}
 }
 

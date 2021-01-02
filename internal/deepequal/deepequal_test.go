@@ -20,10 +20,13 @@ func (fn tfFn) Fatalf(format string, args ...interface{}) {
 func TestError(t *testing.T) {
 	deepequal.Error(
 		tfFn(func(format string, args ...interface{}) {
-			expected := `name
-expected: "aaaaaaaaa"
-  actual: "aaaaaabba"
-    diff:        ^^  `
+			expected := `
+--- name expected
++++ name actual
+@@ -1 +1 @@
+-aaaaaaaaa
++aaaaaabba
+`
 			actual := fmt.Sprintf(format, args...)
 			if expected != actual {
 				t.Errorf("expected %s, got %s", expected, actual)
