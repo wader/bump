@@ -1,15 +1,11 @@
 package cli
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"strings"
-	"sync"
-	"time"
 
-	"github.com/pmezard/go-difflib/difflib"
 	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter"
 	"github.com/wader/bump/internal/filter/all"
@@ -120,14 +116,6 @@ Examples:
 	)
 }
 
-func (cmd Command) formatDiff(a, b string, patch string) string {
-	return fmt.Sprintf(`
---- %s
-+++ %s
-%s`[1:],
-		a, b, patch)
-}
-
 // Run bump command
 func (cmd Command) Run() []error {
 	errs := cmd.run()
@@ -142,12 +130,14 @@ func (cmd Command) run() []error {
 	var include string
 	var exclude string
 	var verbose bool
+	var runCommands bool
 
 	flags := flag.NewFlagSet(cmd.OS.Args()[0], flag.ContinueOnError)
 	flags.StringVar(&bumpfile, "f", BumpfileName, "Bumpfile to read")
 	flags.StringVar(&include, "i", "", "Comma separated names to include")
 	flags.StringVar(&exclude, "e", "", "Comma separated names to exclude")
 	flags.BoolVar(&verbose, "v", false, "Verbose")
+	flags.BoolVar(&runCommands, "r", false, "Run update commands")
 	flags.SetOutput(cmd.OS.Stderr())
 	flags.Usage = func() {
 		fmt.Fprint(flags.Output(), cmd.help(flags))
@@ -209,7 +199,6 @@ func (cmd Command) run() []error {
 
 	switch command {
 	case "list", "current", "check", "diff", "update":
-
 		if bumpfilePassed && len(files) > 0 {
 			return []error{errors.New("both bumpfile and file arguments can't be specified")}
 		}
@@ -267,151 +256,48 @@ func (cmd Command) run() []error {
 			}
 		}
 	case "check", "diff", "update":
-		type change struct {
-			file    string
-			line    int
-			version string
-		}
-		type update struct {
-			name    string
-			version string
-			changes []change
-		}
-		type file struct {
-			name string
-			text string
-		}
-		type run struct {
-			cmd string
-			env []string
-		}
-		type result struct {
-			diff        string
-			updates     []update
-			fileChanges []file
-			commandRuns []run
-			afterRuns   []run
-		}
-
-		var resultFn func(check *bump.Check, err error, duration time.Duration)
-		if verbose {
-			var resultFnMU sync.Mutex
-			resultFn = func(check *bump.Check, err error, duration time.Duration) {
-				resultFnMU.Lock()
-				defer resultFnMU.Unlock()
-				var result string
-				if err == nil {
-					result = check.Latest
-				} else {
-					result = err.Error()
-				}
-				fmt.Fprintf(cmd.OS.Stdout(), "%s %s %s\n", check.Name, result, duration)
-			}
-		}
-
-		if errs := bfs.Latest(resultFn); errs != nil {
+		ua, errs := bfs.UpdateActions()
+		if errs != nil {
 			return errs
 		}
 
-		var r result
-
-		for _, check := range bfs.SelectedChecks() {
-			var changes []change
-
-			for _, c := range check.Currents {
-				if c.Version == check.Latest {
-					continue
-				}
-
-				changes = append(changes, change{
-					file:    c.File.Name,
-					line:    c.LineNr,
-					version: c.Version,
-				})
-			}
-
-			if len(changes) == 0 {
-				continue
-			}
-
-			r.updates = append(r.updates, update{
-				name:    check.Name,
-				version: check.Latest,
-				changes: changes,
-			})
-
-			env := bfs.CommandEnv(check)
-			// TODO: refactor, bfs.Replace skip if there are commands
-			for _, cr := range check.CommandRuns {
-				r.commandRuns = append(r.commandRuns, run{cmd: cr, env: env})
-			}
-			for _, cr := range check.AfterRuns {
-				r.commandRuns = append(r.commandRuns, run{cmd: cr, env: env})
-			}
-		}
-
-		var diffs []string
-		for _, f := range bfs.Files {
-			newTextBuf := bfs.Replace(f)
-			// might return equal even if version has changed if checks has run commands
-			if bytes.Equal(f.Text, newTextBuf) {
-				continue
-			}
-			newText := string(newTextBuf)
-
-			udiff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(string(f.Text)),
-				B:        difflib.SplitLines(newText),
-				FromFile: f.Name,
-				ToFile:   f.Name,
-				Context:  3,
-			})
-			if err != nil {
-				return []error{err}
-			}
-
-			diffs = append(diffs, udiff)
-
-			r.fileChanges = append(r.fileChanges, file{
-				name: f.Name,
-				text: newText,
-			})
-		}
-		r.diff = strings.Join(diffs, "")
-
 		switch command {
 		case "check":
-			for _, u := range r.updates {
-				if verbose {
-					for _, c := range u.changes {
-						fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s %s -> %s\n", c.file, c.line, u.name, c.version, u.version)
+			if verbose {
+				for _, check := range bfs.Checks {
+					for _, c := range check.Currents {
+						fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s %s -> %s %.3fs\n",
+							c.File.Name, c.LineNr, check.Name, c.Version, check.Latest,
+							float32(check.PipelineDuration.Milliseconds())/1000.0)
 					}
-				} else {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s %s\n", u.name, u.version)
+				}
+			} else {
+				for _, vs := range ua.VersionChanges {
+					fmt.Fprintf(cmd.OS.Stdout(), "%s %s\n", vs.Check.Name, vs.Check.Latest)
 				}
 			}
 		case "diff":
-			fmt.Fprint(cmd.OS.Stdout(), r.diff)
+			for _, fc := range ua.FileChanges {
+				fmt.Fprint(cmd.OS.Stdout(), fc.Diff)
+			}
 		case "update":
-			for _, f := range r.fileChanges {
-				if err := cmd.OS.WriteFile(f.name, []byte(f.text)); err != nil {
+			for _, fc := range ua.FileChanges {
+				if err := cmd.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
 					return []error{err}
 				}
 			}
-			for _, r := range r.commandRuns {
-				if verbose {
-					fmt.Fprintf(cmd.OS.Stdout(), "command: %s %s\n", strings.Join(r.env, " "), r.cmd)
+			if runCommands {
+				for _, rs := range ua.RunShells {
+					if verbose {
+						fmt.Fprintf(cmd.OS.Stdout(), "%s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
+					}
+					if err := cmd.OS.Shell(rs.Cmd, rs.Env); err != nil {
+						return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
+					}
 				}
-				if err := cmd.OS.Shell(r.cmd, r.env); err != nil {
-					return []error{fmt.Errorf("command: %s: %w", r.cmd, err)}
-				}
-			}
-			for _, r := range r.afterRuns {
-				if verbose {
-					fmt.Fprintf(cmd.OS.Stdout(), "after: %s %s\n", strings.Join(r.env, " "), r.cmd)
-				}
-				if err := cmd.OS.Shell(r.cmd, r.env); err != nil {
-					return []error{fmt.Errorf("after: %s: %w", r.cmd, err)}
+			} else if len(ua.RunShells) > 0 {
+				for _, rs := range ua.RunShells {
+					fmt.Fprintf(cmd.OS.Stdout(), "skipping %s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
 				}
 			}
 		}

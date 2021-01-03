@@ -1,4 +1,4 @@
-// testing is currently done thru cli tests
+// testing is done thru cli tests
 
 package bump
 
@@ -35,9 +35,11 @@ type Check struct {
 	Name string
 
 	// bump: <name> /<re>/ <pipeline>
-	PipelineLineNr int
-	CurrentRE      *regexp.Regexp
-	Pipeline       pipeline.Pipeline
+	PipelineLineNr   int
+	CurrentRE        *regexp.Regexp
+	Pipeline         pipeline.Pipeline
+	PipelineDuration time.Duration
+
 	// bump: <name> command ...
 	CommandShells []CheckShell
 	// bump: <name> after ...
@@ -124,13 +126,13 @@ func NewBumpFileSet(
 	return b, nil
 }
 
-func (b *FileSet) addBumpfile(os OS, name string) error {
+func (fs *FileSet) addBumpfile(os OS, name string) error {
 	text, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}
 	file := &File{Name: name, Text: text, HasNoVersions: true}
-	b.Files = append(b.Files, file)
+	fs.Files = append(fs.Files, file)
 
 	lineNr := 0
 	for _, l := range strings.Split(string(text), "\n") {
@@ -144,14 +146,14 @@ func (b *FileSet) addBumpfile(os OS, name string) error {
 		matches, _ := os.Glob(l)
 		if len(matches) > 0 {
 			for _, m := range matches {
-				if err := b.addFile(os, m); err != nil {
+				if err := fs.addFile(os, m); err != nil {
 					return err
 				}
 			}
 			continue
 		}
 
-		err := b.parseCheckLine(file, lineNr, l, b.Filters)
+		err := fs.parseCheckLine(file, lineNr, l, fs.Filters)
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
 		}
@@ -160,15 +162,15 @@ func (b *FileSet) addBumpfile(os OS, name string) error {
 	return nil
 }
 
-func (b *FileSet) addFile(os OS, name string) error {
+func (fs *FileSet) addFile(os OS, name string) error {
 	text, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}
 	file := &File{Name: name, Text: text}
-	b.Files = append(b.Files, file)
+	fs.Files = append(fs.Files, file)
 
-	err = b.parseFile(file, b.Filters)
+	err = fs.parseFile(file, fs.Filters)
 	if err != nil {
 		return err
 	}
@@ -177,14 +179,14 @@ func (b *FileSet) addFile(os OS, name string) error {
 }
 
 // SelectedChecks returns selected checks based on SkipCheckFn
-func (b *FileSet) SelectedChecks() []*Check {
-	if b.SkipCheckFn == nil {
-		return b.Checks
+func (fs *FileSet) SelectedChecks() []*Check {
+	if fs.SkipCheckFn == nil {
+		return fs.Checks
 	}
 
 	var filteredChecks []*Check
-	for _, c := range b.Checks {
-		if b.SkipCheckFn(c) {
+	for _, c := range fs.Checks {
+		if fs.SkipCheckFn(c) {
 			continue
 		}
 		filteredChecks = append(filteredChecks, c)
@@ -193,8 +195,8 @@ func (b *FileSet) SelectedChecks() []*Check {
 	return filteredChecks
 }
 
-// Latest run all pipelines to populate latest versions
-func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Duration)) []error {
+// Latest run all pipelines to get latest version
+func (fs *FileSet) Latest() []error {
 	type result struct {
 		i        int
 		latest   string
@@ -202,7 +204,7 @@ func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Du
 		duration time.Duration
 	}
 
-	selectedChecks := b.SelectedChecks()
+	selectedChecks := fs.SelectedChecks()
 	resultCh := make(chan result, len(selectedChecks))
 
 	wg := sync.WaitGroup{}
@@ -224,22 +226,19 @@ func (b *FileSet) Latest(resultFn func(check *Check, err error, duration time.Du
 	var errs []error
 	for r := range resultCh {
 		c := selectedChecks[r.i]
+		c.PipelineDuration = r.duration
 		c.Latest = r.latest
 		if r.err != nil {
 			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.PipelineLineNr, c.Name, r.err))
-		}
-
-		if resultFn != nil {
-			resultFn(c, r.err, r.duration)
 		}
 	}
 
 	return errs
 }
 
-func (b *FileSet) findCurrent() {
-	for _, c := range b.SelectedChecks() {
-		for _, f := range b.Files {
+func (fs *FileSet) findCurrent() {
+	for _, c := range fs.SelectedChecks() {
+		for _, f := range fs.Files {
 			if f.HasNoVersions {
 				continue
 			}
@@ -272,17 +271,17 @@ func (b *FileSet) findCurrent() {
 }
 
 // Lint configuration
-func (b *FileSet) Lint() []error {
+func (fs *FileSet) Lint() []error {
 	var errs []error
 
-	for _, c := range b.Checks {
+	for _, c := range fs.Checks {
 		if len(c.Currents) != 0 {
 			continue
 		}
 		errs = append(errs, fmt.Errorf("%s:%d: %s has no current version matches", c.File.Name, c.PipelineLineNr, c.Name))
 	}
 
-	for _, f := range b.Files {
+	for _, f := range fs.Files {
 		if f.HasNoVersions {
 			if f.HasConfig {
 				continue
@@ -296,9 +295,9 @@ func (b *FileSet) Lint() []error {
 		}
 	}
 
-	for _, ca := range b.Checks {
+	for _, ca := range fs.Checks {
 		for _, cca := range ca.Currents {
-			for _, cb := range b.Checks {
+			for _, cb := range fs.Checks {
 				if ca == cb {
 					continue
 				}
@@ -322,7 +321,7 @@ func (b *FileSet) Lint() []error {
 }
 
 // Replace current with latest versions in text
-func (b *FileSet) Replace(file *File) []byte {
+func (fs *FileSet) Replace(file *File) []byte {
 	if file.HasNoVersions {
 		return file.Text
 	}
@@ -334,7 +333,7 @@ func (b *FileSet) Replace(file *File) []byte {
 		checkLineSet[lineNr] = true
 	}
 
-	selectedChecks := b.SelectedChecks()
+	selectedChecks := fs.SelectedChecks()
 	var replacers []rereplacer.Replace
 	for _, c := range selectedChecks {
 		// skip if check has run commands
@@ -365,20 +364,20 @@ func (b *FileSet) Replace(file *File) []byte {
 	return rereplacer.Replacer(replacers).Replace(file.Text)
 }
 
-func (b *FileSet) CommandEnv(check *Check) []string {
+func (fs *FileSet) CommandEnv(check *Check) []string {
 	return []string{
 		fmt.Sprintf("NAME=%s", check.Name),
 		fmt.Sprintf("LATEST=%s", check.Latest),
 	}
 }
 
-func (b *FileSet) parseFile(file *File, filters []filter.NamedFilter) error {
+func (fs *FileSet) parseFile(file *File, filters []filter.NamedFilter) error {
 	locLine := locline.New(file.Text)
 
 	for _, sm := range bumpRe.FindAllSubmatchIndex(file.Text, -1) {
 		lineNr := locLine.Line(sm[0])
 		checkLine := strings.TrimSpace(string(file.Text[sm[2]:sm[3]]))
-		err := b.parseCheckLine(file, lineNr, checkLine, filters)
+		err := fs.parseCheckLine(file, lineNr, checkLine, filters)
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", file.Name, lineNr, err)
 		}
@@ -387,8 +386,8 @@ func (b *FileSet) parseFile(file *File, filters []filter.NamedFilter) error {
 	return nil
 }
 
-func (b *FileSet) findCheckByName(name string) *Check {
-	for _, c := range b.Checks {
+func (fs *FileSet) findCheckByName(name string) *Check {
+	for _, c := range fs.Checks {
 		if c.Name == name {
 			return c
 		}
@@ -396,7 +395,7 @@ func (b *FileSet) findCheckByName(name string) *Check {
 	return nil
 }
 
-func (b *FileSet) parseCheckLine(file *File, lineNr int, line string, filters []filter.NamedFilter) error {
+func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters []filter.NamedFilter) error {
 	file.HasConfig = true
 
 	nameRest := strings.SplitN(line, " ", 2)
@@ -443,18 +442,18 @@ func (b *FileSet) parseCheckLine(file *File, lineNr int, line string, filters []
 			Pipeline:       pl,
 		}
 
-		for _, bc := range b.Checks {
+		for _, bc := range fs.Checks {
 			if check.Name == bc.Name {
 				return fmt.Errorf("%s already used at %s:%d",
 					check.Name, bc.File.Name, bc.PipelineLineNr)
 			}
 		}
 
-		b.Checks = append(b.Checks, check)
+		fs.Checks = append(fs.Checks, check)
 
 		return nil
 	} else {
-		check := b.findCheckByName(name)
+		check := fs.findCheckByName(name)
 		if check == nil {
 			return fmt.Errorf("%s has not been defined yet", name)
 		}

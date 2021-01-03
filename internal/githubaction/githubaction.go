@@ -115,12 +115,17 @@ func (cmd Command) run() []error {
 		return errs
 	}
 
-	errs = bfs.Latest(nil)
-	if errs != nil {
-		return errs
-	}
-
 	for _, c := range bfs.Checks {
+		// only concider this check for update actions
+		bfs.SkipCheckFn = func(skipC *bump.Check) bool {
+			return skipC.Name != c.Name
+		}
+
+		ua, errs := bfs.UpdateActions()
+		if errs != nil {
+			return errs
+		}
+
 		fmt.Printf("Checking %s\n", c.Name)
 
 		if !c.HasUpdate() {
@@ -159,34 +164,17 @@ func (cmd Command) run() []error {
 			return []error{err}
 		}
 
-		// only concider this check when replacing
-		bfs.SkipCheckFn = func(skipC *bump.Check) bool {
-			return skipC.Name != c.Name
-		}
-
-		for _, f := range bfs.Files {
-			newTextBuf := bfs.Replace(f)
-			if bytes.Equal(f.Text, newTextBuf) {
-				continue
-			}
-			if err := cmd.OS.WriteFile(f.Name, []byte(newTextBuf)); err != nil {
+		for _, fc := range ua.FileChanges {
+			if err := cmd.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
 				return []error{err}
 			}
 
-			fmt.Printf("  Wrote change to %s\n", f.Name)
+			fmt.Printf("  Wrote change to %s\n", fc.File.Name)
 		}
 
-		env := bfs.CommandEnv(c)
-		for _, r := range c.CommandRuns {
-			fmt.Fprintf(cmd.OS.Stdout(), "command: %s %s\n", strings.Join(env, " "), r)
-			if err := cmd.OS.Shell(r, bfs.CommandEnv(c)); err != nil {
-				return []error{fmt.Errorf("command: %s: %w", r, err)}
-			}
-		}
-		for _, r := range c.AfterRuns {
-			fmt.Fprintf(cmd.OS.Stdout(), "after: %s %s\n", strings.Join(env, " "), r)
-			if err := cmd.OS.Shell(r, env); err != nil {
-				return []error{fmt.Errorf("after: %s: %w", r, err)}
+		for _, rs := range ua.RunShells {
+			if err := cmd.OS.Shell(rs.Cmd, rs.Env); err != nil {
+				return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
 			}
 		}
 

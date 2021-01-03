@@ -5,6 +5,7 @@ OPTIONS:
   -e                    Comma separated names to exclude
   -f                    Bumpfile to read (Bumpfile)
   -i                    Comma separated names to include
+  -r                    Run update commands (false)
   -v                    Verbose (false)
 
 COMMANDS:

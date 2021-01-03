@@ -3,10 +3,9 @@
 bump: name /name: (1)/ static:2
 bump: name command cmd arg1 arg2
 name: 1
-$ bump -r update a
-!cmd arg1 arg2
-NAME=name
-LATEST=2
+$ bump update a
+>stdout:
+skipping name: shell: NAME=name LATEST=2 cmd arg1 arg2
 ---
 /Bumpfile:
 name /name: (1)/ static:2
@@ -14,10 +13,9 @@ name command cmd arg1 arg2
 a
 /a:
 name: 1
-$ bump -r update
-!cmd arg1 arg2
-NAME=name
-LATEST=2
+$ bump update
+>stdout:
+skipping name: shell: NAME=name LATEST=2 cmd arg1 arg2
 ---
 /Bumpfile:
 name /name: (1)/ static:1
@@ -25,4 +23,4 @@ name command cmd arg1 arg2
 a
 /a:
 name: 1
-$ bump -r update
+$ bump update
