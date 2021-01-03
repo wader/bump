@@ -476,8 +476,10 @@ test
 
 ## Ideas, TODOs and known issues
 
+- GitHub action: How to access package manager tools? separate docker images? bump-go?
 - GitHub action: PR labels
 - GitHub action: some kind of tests
+- Configuration templates, go package etc?
 - Proper version number for bump itself
 - How to use with hg
 - docker filter: value should be layer hash
