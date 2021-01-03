@@ -1,4 +1,5 @@
 # bump: golang /FROM golang:([\d.]+)/ docker:golang|^1
+# bump: golang link "Release notes" https://golang.org/doc/devel/release.html
 FROM golang:1.15.6-buster AS builder
 
 # patch is used by cmd/bump/main_test.sh to test diff
@@ -15,6 +16,7 @@ RUN CGO_ENABLED=0 go build -o /bump -tags netgo -ldflags '-extldflags "-static"'
 RUN cmd/bump/main_test.sh /bump
 
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 FROM alpine:3.12.3
 # git is used by github action code
 # curl for convenience in run commands
