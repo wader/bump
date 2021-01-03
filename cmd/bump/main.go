@@ -53,9 +53,15 @@ func (OS) Glob(pattern string) ([]string, error) {
 }
 
 // Shell runs a sh command
-func (OS) Shell(cmd string, env []string) error {
+func (o OS) Shell(cmd string, env []string) error {
 	// TODO: non-sh OS:s?
-	c := exec.Command("sh", "-c", cmd)
+	return o.Exec([]string{"sh", "-c", cmd}, env)
+}
+
+// Exec a command (not thru shell)
+func (OS) Exec(args []string, env []string) error {
+	// TODO: non-sh OS:s?
+	c := exec.Command(args[0], args[1:]...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Env = append(os.Environ(), env...)

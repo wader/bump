@@ -1,30 +1,13 @@
 package githubaction
 
 import (
-	"bytes"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter/all"
 	"github.com/wader/bump/internal/github"
 )
-
-func runCmds(argss [][]string) error {
-	for _, args := range argss {
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Env = os.Environ()
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		fmt.Printf("> %s\n", cmd.String())
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 // CheckTemplateReplaceFn buils a function for doing template replacing for check
 func CheckTemplateReplaceFn(c *bump.Check) func(s string) string {
@@ -60,17 +43,23 @@ func (cmd Command) Run() []error {
 	return errs
 }
 
+func (cmd Command) runExecs(argss [][]string) error {
+	for _, args := range argss {
+		fmt.Printf("> %s\n", strings.Join(args, " "))
+		if err := cmd.OS.Exec(args, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (cmd Command) run() []error {
-	ae, err := github.NewActionEnv(os.Getenv, cmd.Version)
+	ae, err := github.NewActionEnv(cmd.OS.Getenv, cmd.Version)
 	if err != nil {
 		return []error{err}
 	}
 	// TODO: used in tests
 	ae.Client.BaseURL = cmd.OS.Getenv("GITHUB_API_URL")
-
-	if _, err := exec.LookPath("git"); err != nil {
-		return []error{err}
-	}
 
 	if ae.SHA == "" {
 		return []error{fmt.Errorf("GITHUB_SHA not set")}
@@ -99,7 +88,7 @@ func (cmd Command) run() []error {
 	}
 
 	pushURL := fmt.Sprintf("https://%s:%s@github.com/%s.git", ae.Actor, ae.Client.Token, ae.Repository)
-	err = runCmds([][]string{
+	err = cmd.runExecs([][]string{
 		{"git", "config", "--global", "user.name", userName},
 		{"git", "config", "--global", "user.email", userEmail},
 		{"git", "remote", "set-url", "--push", "origin", pushURL},
@@ -159,7 +148,7 @@ func (cmd Command) run() []error {
 		}
 
 		// reset HEAD back to triggering commit before each PR
-		err = runCmds([][]string{{"git", "reset", "--hard", ae.SHA}})
+		err = cmd.runExecs([][]string{{"git", "reset", "--hard", ae.SHA}})
 		if err != nil {
 			return []error{err}
 		}
@@ -179,7 +168,7 @@ func (cmd Command) run() []error {
 		}
 
 		title := templateReplacerFn(titleTemplate)
-		err = runCmds([][]string{
+		err = cmd.runExecs([][]string{
 			{"git", "diff"},
 			{"git", "add", "--update"},
 			{"git", "commit", "--message", title},

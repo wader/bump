@@ -13,4 +13,5 @@ type OS interface {
 	ReadFile(filename string) ([]byte, error)
 	Glob(pattern string) ([]string, error)
 	Shell(cmd string, env []string) error
+	Exec(args []string, env []string) error
 }

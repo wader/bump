@@ -91,6 +91,10 @@ func (e *testCase) Shell(cmd string, env []string) error {
 	return nil
 }
 
+func (e *testCase) Exec(args []string, env []string) error {
+	panic("not implemented")
+}
+
 type section struct {
 	LineNr int
 	Name   string
