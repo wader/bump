@@ -169,7 +169,7 @@ Example Bumpfile using `after` to run a script to update download hashes:
 libvorbis after ./hashupdate Dockerfile VORBIS $LATEST
 ```
 
-### Commit and pull request messages sand links
+### Commit and pull request messages and links
 
 ```
 NAME message MESSAGE
