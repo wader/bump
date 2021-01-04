@@ -13,11 +13,12 @@ lint:
 README.md:
 	$(eval REPODIR=$(shell pwd))
 	$(eval TEMPDIR=$(shell mktemp -d))
-	cp -a examples "${TEMPDIR}"
+	cp -a examples/* "${TEMPDIR}"
 	go build -o "${TEMPDIR}/bump" cmd/bump/main.go
 	go build -o "${TEMPDIR}/filtersmarkdown" _dev/filtersmarkdown.go
 	cd "${TEMPDIR}" ; \
-		cat "${REPODIR}/_dev/README.md" | PATH="${TEMPDIR}:${PATH}" go run "${REPODIR}/_dev/mdsh.go" > "${REPODIR}/README.md"
+		cat "${REPODIR}/README.md" | PATH="${TEMPDIR}:${PATH}" go run "${REPODIR}/_dev/mdsh.go" > "${TEMPDIR}/README.md"
+	mv "${TEMPDIR}/README.md" "${REPODIR}/README.md"
 	rm -rf "${TEMPDIR}"
 
 .PHONY: README.md test cover lint

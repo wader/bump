@@ -7,30 +7,30 @@ management system does not fit or can't be used. This can be for example when
 having versions of dependencies in Makefiles, Dockerfiles, scripts or other
 kinds of texts.
 
-For example this is a Dockerfile where we want to keep the base image version
-updated to the latest exact alpine 3 version.
+For example this is a Bumpfile where we want to keep the Dockerfile base image
+version updated to the latest exact alpine 3 version.
 
 ```sh (exec)
-$ cat examples/Dockerfile
-# bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
-FROM alpine:3.9.3 AS builder
-
+$ cat Bumpfile
+alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
+Dockerfile
+# See current versions
+$ bump current
+Dockerfile:1: alpine 3.9.2
 # See possible updates
-$ bump check examples/Dockerfile
+$ bump check
 alpine 3.12.3
-
 # See what will be changed
-$ bump diff examples/Dockerfile
---- examples/Dockerfile
-+++ examples/Dockerfile
-@@ -1,3 +1,3 @@
- # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
--FROM alpine:3.9.3 AS builder
+$ bump diff
+--- Dockerfile
++++ Dockerfile
+@@ -1,2 +1,2 @@
+-FROM alpine:3.9.2 AS builder
 +FROM alpine:3.12.3 AS builder
  
-
-# Write changes and run commands
-$ bump update examples/Dockerfile
+# Write changes
+$ bump update
 ```
 
 A real world example is the
@@ -193,6 +193,10 @@ FROM alpine:3.9.3 AS builder
 ```
 bump: NAME [command|after] COMMAND
 ```
+`COMMAND` will run with these environment variables set:  
+`$NAME` is configuration name  
+`$CURRENT` is current version  
+`$LATEST` is latest version available  
 
 There are two kinds of shell commands, `command` and `after`. `command` will be executed
 instead bump doing the changes. `after` will always be executed after bump has done any changes.
@@ -222,6 +226,10 @@ libvorbis after ./hashupdate Dockerfile VORBIS $LATEST
 NAME message MESSAGE
 NAME link "TITLE" URL
 ```
+These variable are available in `MESSAGE`, `TITLE` and `URL`:  
+`$NAME` is configuration name  
+`$CURRENT` is current version  
+`$LATEST` is latest version available  
 
 You can include messages and links in commit messages and pull requests by using one or
 more `message` and `link` configurations.
@@ -259,15 +267,12 @@ can be helpful when testing pipelines.
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
 4.3.1
-
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
 a3a26a98652fbdaa474e95cfbc12f68b64ca1e6f
-
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
 1.15.6
-
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -278,7 +283,8 @@ $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*
 Filter are used to produce, transform and filter versions. Some filters like `git`
 produces versions, `re` and `semver` transforms and filters.
 
-[filtersmarkdown]: sh
+[filtersmarkdown]: sh-start
+
 [git](#git) `git:<repo>` or `<repo.git>`  
 [gitrefs](#gitrefs) `gitrefs:<repo>`  
 [docker](#docker) `docker:<image>`  
@@ -474,9 +480,11 @@ test
 ```
 
 
+[#]: sh-end
+
 ## Ideas, TODOs and known issues
 
-- GitHub action: How to access package manager tools? separate docker images? bump-go?
+- GitHub action: How to access package manager tools? separate docker images? bump-go? install bump binary in other image?
 - GitHub action: PR labels
 - GitHub action: some kind of tests
 - Configuration templates, go package etc?
