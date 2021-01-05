@@ -113,9 +113,16 @@ COMMANDS:
   pipeline PIPELINE     Run a filter pipeline
 
 BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
-FILE is file with EMBEDCONFIG:s or versions to be checked or updated
-CONFIG is "NAME /REGEXP/ PIPELINE"
+FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"
+CONFIG is
+  NAME /REGEXP/ PIPELINE |
+  NAME command COMMAND |
+  NAME after COMMAND |
+  NAME message MESSAGE |
+  NAME link "TITLE" "URL"
+NAME is a configuration name
+REGEXP is a regexp with one submatch to find current version
 PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
   git:<repo> | <repo.git>
@@ -129,8 +136,6 @@ FILTER
   key:<name> | @<name>
   static:<name[:key=value:...]>,...
   err:<error>
-NAME is a configuration name
-REGEXP is a regexp with one submatch to find current version
 ```
 
 ## Configuration
