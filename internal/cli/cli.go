@@ -25,6 +25,10 @@ func flagWasPassed(flags *flag.FlagSet, name string) bool {
 	return passed
 }
 
+func csvToSlice(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' })
+}
+
 // Command is a command based interface to bump packages
 type Command struct {
 	Version string
@@ -195,17 +199,11 @@ func (cmd Command) run() []error {
 	var bfs *bump.FileSet
 	var errs []error
 
-	include = strings.Replace(strings.TrimSpace(include), ",", " ", -1)
-	if include != "" {
-		for _, n := range strings.Fields(include) {
-			includes[n] = true
-		}
+	for _, n := range csvToSlice(include) {
+		includes[n] = true
 	}
-	exclude = strings.Replace(strings.TrimSpace(exclude), ",", " ", -1)
-	if exclude != "" {
-		for _, n := range strings.Fields(exclude) {
-			excludes[n] = true
-		}
+	for _, n := range csvToSlice(exclude) {
+		excludes[n] = true
 	}
 
 	switch command {
