@@ -147,28 +147,34 @@ func (cmd Command) run() []error {
 	flags.Usage = func() {
 		fmt.Fprint(flags.Output(), cmd.help(flags))
 	}
-
-	err := flags.Parse(cmd.OS.Args()[1:])
-	if err == flag.ErrHelp {
-		flags.Usage()
-		return nil
-	} else if err != nil {
-		return []error{err}
+	parseFlags := func(args []string) ([]error, bool) {
+		err := flags.Parse(args)
+		if err == flag.ErrHelp {
+			flags.Usage()
+			return nil, false
+		} else if err != nil {
+			return []error{err}, false
+		}
+		return nil, true
 	}
-	bumpfilePassed := flagWasPassed(flags, "f")
 
+	if err, ok := parseFlags(cmd.OS.Args()[1:]); err != nil || !ok {
+		return err
+	}
 	if len(flags.Args()) == 0 {
 		flags.Usage()
 		return nil
 	}
-
 	command := flags.Arg(0)
+	if err, ok := parseFlags(flags.Args()[1:]); err != nil || !ok {
+		return err
+	}
 
 	if command == "version" {
 		fmt.Fprintf(cmd.OS.Stdout(), "%s\n", cmd.Version)
 		return nil
 	} else if command == "help" {
-		filterName := flags.Arg(1)
+		filterName := flags.Arg(0)
 		if filterName == "" {
 			flags.Usage()
 			return nil
@@ -183,7 +189,7 @@ func (cmd Command) run() []error {
 		return nil
 	}
 
-	files := flags.Args()[1:]
+	files := flags.Args()
 	includes := map[string]bool{}
 	excludes := map[string]bool{}
 	var bfs *bump.FileSet
@@ -204,6 +210,7 @@ func (cmd Command) run() []error {
 
 	switch command {
 	case "list", "current", "check", "diff", "update":
+		bumpfilePassed := flagWasPassed(flags, "f")
 		if bumpfilePassed && len(files) > 0 {
 			return []error{errors.New("both bumpfile and file arguments can't be specified")}
 		}
@@ -313,7 +320,7 @@ func (cmd Command) run() []error {
 			}
 		}
 	case "pipeline":
-		plStr := flags.Arg(1)
+		plStr := flags.Arg(0)
 		pl, err := pipeline.New(cmd.filters(), plStr)
 		if err != nil {
 			return []error{err}
