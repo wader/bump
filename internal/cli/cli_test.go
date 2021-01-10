@@ -16,83 +16,161 @@ import (
 	"github.com/wader/bump/internal/deepequal"
 )
 
+const testCaseDelim = "---\n"
+
 type testShell struct {
-	Cmd string
-	Env []string
+	cmd string
+	env []string
+}
+
+type testCaseFile struct {
+	name string
+	data string
 }
 
 type testCase struct {
-	LineNr int
-
-	RunArgs []string
-	Files   map[string]string
-
-	ExpectedFiles  map[string]string
-	ExpectedStdout string
-	ExpectedStderr string
-	ExpectedShells []testShell
-
-	ActualFiles     map[string]string
-	ActualStdoutBuf *bytes.Buffer
-	ActualStderrBuf *bytes.Buffer
-	ActualShells    []testShell
+	parts []interface{}
 }
 
-func (tc *testCase) Args() []string {
-	return tc.RunArgs
+type testCaseComment string
+type testCaseExistingFile testCaseFile
+type testCaseExpectedWriteFile testCaseFile
+type testCaseArgs string
+type testCaseExpectedStdout string
+type testCaseExpectedStderr string
+type testCaseExpectedShell testShell
+
+func (tc testCase) String() string {
+	sb := &strings.Builder{}
+	for _, p := range tc.parts {
+		switch p := p.(type) {
+		case testCaseComment:
+			fmt.Fprintf(sb, "#%s\n", p)
+		case testCaseExistingFile:
+			fmt.Fprintf(sb, "/%s:\n", p.name)
+			fmt.Fprint(sb, p.data)
+		case testCaseArgs:
+			fmt.Fprintf(sb, "$%s\n", p)
+		case testCaseExpectedWriteFile:
+			fmt.Fprintf(sb, "/%s:\n", p.name)
+			fmt.Fprint(sb, p.data)
+		case testCaseExpectedStdout:
+			fmt.Fprintf(sb, ">stdout:\n")
+			fmt.Fprint(sb, p)
+		case testCaseExpectedStderr:
+			fmt.Fprintf(sb, ">stderr:\n")
+			fmt.Fprint(sb, p)
+		case testCaseExpectedShell:
+			fmt.Fprintf(sb, "!%s\n", p.cmd)
+			for _, e := range p.env {
+				fmt.Fprintln(sb, e)
+			}
+		default:
+			panic("unreachable")
+		}
+	}
+	return sb.String()
 }
 
-func (e *testCase) Getenv(name string) string {
-	panic("not implemented")
+type testCaseOS struct {
+	tc                 testCase
+	actualWrittenFiles []testCaseFile
+	actualStdoutBuf    *bytes.Buffer
+	actualStderrBuf    *bytes.Buffer
+	actualShells       []testShell
 }
 
-func (e *testCase) Stdout() io.Writer {
-	return e.ActualStdoutBuf
+func (t *testCaseOS) Args() []string {
+	for _, p := range t.tc.parts {
+		if a, ok := p.(testCaseArgs); ok {
+			return strings.Fields(string(a))
+		}
+	}
+	return nil
 }
-
-func (e *testCase) Stderr() io.Writer {
-	return e.ActualStderrBuf
-}
-
-func (e *testCase) WriteFile(name string, data []byte) error {
-	e.ActualFiles[name] = string(data)
+func (t *testCaseOS) Getenv(name string) string { panic("not implemented") }
+func (t *testCaseOS) Stdout() io.Writer         { return t.actualStdoutBuf }
+func (t *testCaseOS) Stderr() io.Writer         { return t.actualStderrBuf }
+func (t *testCaseOS) WriteFile(name string, data []byte) error {
+	t.actualWrittenFiles = append(t.actualWrittenFiles, testCaseFile{name: name, data: string(data)})
 	return nil
 }
 
-func (e *testCase) ReadFile(name string) ([]byte, error) {
-	if data, ok := e.Files[name]; ok {
-		return []byte(data), nil
+func (t *testCaseOS) ReadFile(name string) ([]byte, error) {
+	for _, p := range t.tc.parts {
+		if f, ok := p.(testCaseExistingFile); ok && f.name == name {
+			return []byte(f.data), nil
+		}
 	}
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
-func (e *testCase) Glob(pattern string) ([]string, error) {
+func (t *testCaseOS) Glob(pattern string) ([]string, error) {
 	var matches []string
-
-	for name := range e.Files {
-		ok, err := filepath.Match(pattern, name)
-		if err != nil {
-			return nil, err
+	for _, p := range t.tc.parts {
+		if f, ok := p.(testCaseExistingFile); ok {
+			ok, err := filepath.Match(pattern, f.name)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				continue
+			}
+			matches = append(matches, f.name)
 		}
-		if !ok {
-			continue
-		}
-		matches = append(matches, name)
 	}
-
 	return matches, nil
 }
 
-func (e *testCase) Shell(cmd string, env []string) error {
-	e.ActualShells = append(e.ActualShells, testShell{
-		Cmd: cmd,
-		Env: env,
+func (t *testCaseOS) Shell(cmd string, env []string) error {
+	t.actualShells = append(t.actualShells, testShell{
+		cmd: cmd,
+		env: env,
 	})
 	return nil
 }
 
-func (e *testCase) Exec(args []string, env []string) error {
-	panic("not implemented")
+func (t *testCaseOS) Exec(args []string, env []string) error { panic("not implemented") }
+
+func (t *testCaseOS) String() string {
+	sb := &strings.Builder{}
+	for _, p := range t.tc.parts {
+		switch p := p.(type) {
+		case testCaseComment:
+			fmt.Fprintf(sb, "#%s\n", p)
+		case testCaseExistingFile:
+			fmt.Fprintf(sb, "/%s:\n", p.name)
+			fmt.Fprint(sb, p.data)
+		case testCaseArgs:
+			fmt.Fprintf(sb, "$%s\n", string(p))
+			for _, awf := range t.actualWrittenFiles {
+				fmt.Fprintf(sb, "/%s:\n", awf.name)
+				fmt.Fprint(sb, awf.data)
+			}
+			if t.actualStdoutBuf.Len() > 0 {
+				fmt.Fprintf(sb, ">stdout:\n")
+				fmt.Fprint(sb, t.actualStdoutBuf.String())
+			}
+			if t.actualStderrBuf.Len() > 0 {
+				fmt.Fprintf(sb, ">stderr:\n")
+				fmt.Fprint(sb, t.actualStderrBuf.String())
+			}
+			for _, s := range t.actualShells {
+				fmt.Fprintf(sb, "!%s\n", s.cmd)
+				for _, e := range s.env {
+					fmt.Fprintln(sb, e)
+				}
+			}
+		case testCaseExpectedWriteFile,
+			testCaseExpectedStdout,
+			testCaseExpectedStderr,
+			testCaseExpectedShell:
+			// nop
+		default:
+			panic(fmt.Sprintf("unreachable %#+v", p))
+		}
+	}
+	return sb.String()
 }
 
 type section struct {
@@ -165,58 +243,48 @@ a:
 }
 
 func parseTestCases(s string) []testCase {
-	var tes []testCase
+	var tcs []testCase
 
-	for _, c := range strings.Split(s, "---\n") {
-		te := testCase{}
-		te.Files = map[string]string{}
-
-		te.ActualStdoutBuf = &bytes.Buffer{}
-		te.ActualStderrBuf = &bytes.Buffer{}
-		te.ActualFiles = map[string]string{}
-		te.ExpectedFiles = map[string]string{}
-
+	for _, c := range strings.Split(s, testCaseDelim) {
+		tc := testCase{}
 		seenRun := false
-		// NOTE: !
+
 		for _, section := range sectionParser(regexp.MustCompile(`^([/>].*:)|[#\$!].*$`), c) {
 			n, v := section.Name, section.Value
-			name := n[1 : len(n)-1]
 
 			switch {
 			case strings.HasPrefix(n, "#"):
-				continue
+				tc.parts = append(tc.parts, testCaseComment(strings.TrimPrefix(n, "#")))
 			case !seenRun && strings.HasPrefix(n, "/"):
-				te.Files[name] = v
+				name := n[1 : len(n)-1]
+				tc.parts = append(tc.parts, testCaseExistingFile{name: name, data: v})
 			case !seenRun && strings.HasPrefix(n, "$"):
 				seenRun = true
-				args := strings.Fields(strings.TrimPrefix(n, "$"))
-				te.RunArgs = args
+				tc.parts = append(tc.parts, testCaseArgs(strings.TrimPrefix(n, "$")))
 			case seenRun && n == ">stdout:":
-				te.ExpectedStdout = v
+				tc.parts = append(tc.parts, testCaseExpectedStdout(v))
 			case seenRun && n == ">stderr:":
-				te.ExpectedStderr = v
+				tc.parts = append(tc.parts, testCaseExpectedStderr(v))
 			case seenRun && strings.HasPrefix(n, "/"):
-				te.ExpectedFiles[name] = v
+				name := n[1 : len(n)-1]
+				tc.parts = append(tc.parts, testCaseExpectedWriteFile{name: name, data: v})
 			case seenRun && strings.HasPrefix(n, "!"):
 				env := strings.Split(v, "\n")
 				env = env[0 : len(env)-1]
-				te.ExpectedShells = append(te.ExpectedShells, testShell{
-					Cmd: strings.TrimPrefix(n[1:], "!"),
-					Env: env,
-				})
+				tc.parts = append(tc.parts, testCaseExpectedShell{cmd: strings.TrimPrefix(n[1:], "!"), env: env})
 			default:
 				panic(fmt.Sprintf("%d: unexpected section %q %q", section.LineNr, n, v))
 			}
 		}
 
-		tes = append(tes, te)
+		tcs = append(tcs, tc)
 	}
 
-	return tes
+	return tcs
 }
 
 func TestParseTestCase(t *testing.T) {
-	actualTestCase := parseTestCases(`
+	testCaseText := `
 /a:
 input content a
 $ a b
@@ -245,47 +313,15 @@ envb2=valueb2
 !command22 a22 b22
 enva22=valuea22
 envb22=valueb22
-`[1:])
+`[1:]
 
-	expectedTestCase := []testCase{
-		{
-			RunArgs:        []string{"a", "b"},
-			Files:          map[string]string{"a": "input content a\n"},
-			ExpectedFiles:  map[string]string{"a": "expected content a\n"},
-			ExpectedStdout: "expected stdout\n",
-			ExpectedStderr: "expected stderr\n",
-			ExpectedShells: []testShell{
-				{Cmd: "command a b", Env: []string{"enva=valuea", "envb=valueb"}},
-			},
-			ActualStdoutBuf: &bytes.Buffer{},
-			ActualStderrBuf: &bytes.Buffer{},
-			ActualFiles:     map[string]string{},
-		},
-		{
-			RunArgs:        []string{"a2", "b2"},
-			Files:          map[string]string{"a2": "input content a2\n"},
-			ExpectedFiles:  map[string]string{"a2": "expected content a2\n"},
-			ExpectedStdout: "expected stdout2\n",
-			ExpectedStderr: "expected stderr2\n",
-			ExpectedShells: []testShell{
-				{Cmd: "command2 a2 b2", Env: []string{"enva2=valuea2", "envb2=valueb2"}},
-				{Cmd: "command22 a22 b22", Env: []string{"enva22=valuea22", "envb22=valueb22"}},
-			},
-			ActualStdoutBuf: &bytes.Buffer{},
-			ActualStderrBuf: &bytes.Buffer{},
-			ActualFiles:     map[string]string{},
-		},
+	actualTestCases := parseTestCases(testCaseText)
+	var actualTestCasesTexts []string
+	for _, tc := range actualTestCases {
+		actualTestCasesTexts = append(actualTestCasesTexts, tc.String())
 	}
 
-	deepequal.Error(t, "testcase", expectedTestCase, actualTestCase)
-}
-
-func testCommandTestCase(t *testing.T, te testCase) {
-	cli.Command{Version: "test", OS: &te}.Run()
-	deepequal.Error(t, "files", te.ExpectedFiles, te.ActualFiles)
-	deepequal.Error(t, "stdout", te.ExpectedStdout, te.ActualStdoutBuf.String())
-	deepequal.Error(t, "stderr", te.ExpectedStderr, te.ActualStderrBuf.String())
-	deepequal.Error(t, "shell", te.ExpectedShells, te.ActualShells)
+	deepequal.Error(t, "test case", testCaseText, strings.Join(actualTestCasesTexts, testCaseDelim))
 }
 
 func TestCommand(t *testing.T) {
@@ -299,15 +335,39 @@ func TestCommand(t *testing.T) {
 		fi := fi
 		t.Run(fi.Name(), func(t *testing.T) {
 			t.Parallel()
-			b, err := ioutil.ReadFile(filepath.Join(testDataDir, fi.Name()))
+
+			testFilePath := filepath.Join(testDataDir, fi.Name())
+			b, err := ioutil.ReadFile(testFilePath)
 			if err != nil {
 				t.Fatal(err)
 			}
 			tcs := parseTestCases(string(b))
-			for _, tc := range tcs {
-				t.Run(strconv.Itoa(tc.LineNr), func(t *testing.T) {
-					testCommandTestCase(t, tc)
+			var actualTexts []string
+
+			for i, tc := range tcs {
+				t.Run(strconv.Itoa(i), func(t *testing.T) {
+					to := &testCaseOS{
+						tc:                 tc,
+						actualWrittenFiles: []testCaseFile{},
+						actualStdoutBuf:    &bytes.Buffer{},
+						actualStderrBuf:    &bytes.Buffer{},
+						actualShells:       []testShell{},
+					}
+
+					cli.Command{Version: "test", OS: to}.Run()
+					deepequal.Error(t, "testcase", tc.String(), to.String())
+
+					actualTexts = append(actualTexts, to.String())
 				})
+			}
+
+			actualText := strings.Join(actualTexts, testCaseDelim)
+			_ = actualText
+
+			if v := os.Getenv("WRITE_ACTUAL"); v != "" {
+				if err := ioutil.WriteFile(testFilePath, []byte(actualText), 0644); err != nil {
+					t.Error(err)
+				}
 			}
 		})
 	}
