@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: wader/bump@master
+      - uses: wader/bump/action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -68,7 +68,9 @@ Note that if you want bump PRs to trigger other actions like CI builds
 with repo access and add it as a secret. For example
 add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
 
-See [Dockerfile](Dockerfile) for tools installed in the default image.
+These actions are available:  
+`wader/bump/action@master` is alpine with git and curl  
+`wader/bump/action/go@master` is alpine with git, curl and go  
 
 ## Install
 

@@ -21,4 +21,9 @@ README.md:
 	mv "${TEMPDIR}/README.md" "${REPODIR}/README.md"
 	rm -rf "${TEMPDIR}"
 
+actions:
+	for i in $(shell cd action && ls -1 | grep -v .yml) ; do \
+		cat action/action.yml | sed -E "s/image: .*/image: 'docker:\/\/mwader\/bump:$$i'/" > action/$$i/action.yml ; \
+	done
+
 .PHONY: README.md test cover lint

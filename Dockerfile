@@ -17,16 +17,18 @@ RUN cmd/bump/main_test.sh /bump
 
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 # bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM alpine:3.13.0
+FROM alpine:3.13.0 AS bump-base
 # git is used by github action code
-# curl for convenience in run commands
-# go to do go mod things in run commands
-# TODO: install more tools or split into multiple images?
+# curl for convenience
 RUN apk add --no-cache \
     git \
-    curl \
-    go
+    curl
 COPY --from=builder /bump /usr/local/bin
 RUN ["/usr/local/bin/bump", "version"]
 RUN ["/usr/local/bin/bump", "pipeline", "git:https://github.com/torvalds/linux.git|*"]
 ENTRYPOINT ["/usr/local/bin/bump"]
+
+FROM bump-base AS bump-go
+RUN apk add --no-cache go
+
+FROM bump-base

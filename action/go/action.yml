@@ -1,0 +1,40 @@
+name: 'Bump versions'
+description: 'Use bump to create version update pull requests'
+icon: 'chevrons-up'
+author: 'Mattias Wadman'
+runs:
+  using: 'docker'
+  image: 'docker://mwader/bump:go'
+inputs:
+  bumpfile:
+    description: 'Bumpfile to read'
+    required: false
+    default: 'Bumpfile'
+  files:
+    description: 'Files with embedded configuration or versions to update'
+    required: false
+    default: ''
+  title_template:
+    description: 'Commit and pull request title template'
+    required: false
+    default: 'Update {{.Name}} from {{join .Current ", "}} to {{.Latest}}'
+  commit_body_template:
+    description: 'Commit body template'
+    required: false
+    default: '{{range .Messages}}{{.}}{{"\n\n"}}{{end}}{{range .Links}}{{.Title}} {{.URL}}{{"\n"}}{{end}}'
+  pr_body_template:
+    description: 'Pull request body template'
+    required: false
+    default: '{{range .Messages}}{{.}}{{"\n\n"}}{{end}}{{range .Links}}[{{.Title}}]({{.URL}})  {{"\n"}}{{end}}'
+  branch_template:
+    description: 'Pull requests branch name template'
+    required: false
+    default: 'bump-{{.Name}}-{{.Latest}}'
+  user_name:
+    description: 'Commit user name'
+    required: false
+    default: 'bump'
+  user_email:
+    description: 'Commit user email'
+    required: false
+    default: 'bump-action@github'
