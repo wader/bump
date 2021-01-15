@@ -17,7 +17,7 @@ RUN cmd/bump/main_test.sh /bump
 
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 # bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM alpine:3.12.3
+FROM alpine:3.13.0
 # git is used by github action code
 # curl for convenience in run commands
 # go to do go mod things in run commands
