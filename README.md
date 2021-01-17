@@ -49,6 +49,8 @@ on:
   schedule:
     # minute hour dom month dow (UTC)
     - cron: '0 9 * * *'
+  # enable manual trigger of version updates
+  workflow_dispatch:
 jobs:
   bump:
     runs-on: ubuntu-latest
