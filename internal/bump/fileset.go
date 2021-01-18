@@ -418,18 +418,18 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 		return fmt.Errorf("name is empty")
 	}
 
-	if strings.HasPrefix(rest, "/") {
+	switch {
+	case strings.HasPrefix(rest, "/"):
 		// bump: <name> /<re>/ <pipeline>
 		var currentReStr string
 		var pipelineStr string
-
-		tokens := []lexer.Token{
-			{Name: "re", Dest: &currentReStr, Fn: lexer.Quoted(`/`)},
-			{Fn: lexer.Re(regexp.MustCompile(`\s`))},
-			{Name: "pipeline", Dest: &pipelineStr, Fn: lexer.Rest(1)},
-		}
-
-		if _, err := lexer.Tokenize(rest, tokens); err != nil {
+		if _, err := lexer.Scan(rest,
+			lexer.Concat(
+				lexer.Var("re", &currentReStr, lexer.Quoted(`/`)),
+				lexer.Re(regexp.MustCompile(`\s`)),
+				lexer.Var("pipeline", &pipelineStr, lexer.Rest(1)),
+			),
+		); err != nil {
 			return err
 		}
 		pl, err := pipeline.New(filters, pipelineStr)
@@ -462,7 +462,7 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 		fs.Checks = append(fs.Checks, check)
 
 		return nil
-	} else {
+	default:
 		check := fs.findCheckByName(name)
 		if check == nil {
 			return fmt.Errorf("%s has not been defined yet", name)
@@ -497,16 +497,19 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 				LineNr:  lineNr,
 			})
 		case "link":
-			// bump: <name> link "<title>" <url>
+			// bump: <name> link <title>/"<title>" <url>
 			var linkTitle string
 			var linkURL string
-			tokens := []lexer.Token{
-				{Name: "name", Dest: &linkTitle, Fn: lexer.Quoted(`"`)},
-				{Fn: lexer.Re(regexp.MustCompile(`\s`))},
-				{Name: "URL", Dest: &linkURL, Fn: lexer.Rest(1)},
-			}
-
-			if _, err := lexer.Tokenize(rest, tokens); err != nil {
+			if _, err := lexer.Scan(rest,
+				lexer.Concat(
+					lexer.Var("title", &linkTitle, lexer.Or(
+						lexer.Quoted(`"`),
+						lexer.Re(regexp.MustCompile(`\w`))),
+					),
+					lexer.Re(regexp.MustCompile(`\s`)),
+					lexer.Var("URL", &linkURL, lexer.Rest(1)),
+				),
+			); err != nil {
 				return err
 			}
 

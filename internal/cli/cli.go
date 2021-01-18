@@ -63,7 +63,7 @@ CONFIG is
   NAME command COMMAND |
   NAME after COMMAND |
   NAME message MESSAGE |
-  NAME link "TITLE" "URL"
+  NAME link TITLE URL
 NAME is a configuration name
 REGEXP is a regexp with one submatch to find current version
 PIPELINE is a filter pipeline: FILTER|FILTER|...

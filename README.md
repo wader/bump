@@ -20,14 +20,14 @@ $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.12.3
+alpine 3.13.0
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.12.3 AS builder
++FROM alpine:3.13.0 AS builder
  
 # Write changes
 $ bump update
@@ -122,7 +122,7 @@ CONFIG is
   NAME command COMMAND |
   NAME after COMMAND |
   NAME message MESSAGE |
-  NAME link "TITLE" "URL"
+  NAME link TITLE URL
 NAME is a configuration name
 REGEXP is a regexp with one submatch to find current version
 PIPELINE is a filter pipeline: FILTER|FILTER|...
@@ -163,7 +163,7 @@ read embedded configuration from.
 NAME /REGEXP/ PIPELINE
 NAME [command|after] COMMAND
 NAME message MESSAGE
-NAME link "TITLE" URL
+NAME link TITLE URL
 filename
 glob/*
 ```
@@ -341,7 +341,7 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.12.3
+3.13.0
 ```
 
 ### svn
