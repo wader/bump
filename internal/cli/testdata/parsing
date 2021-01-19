@@ -7,4 +7,4 @@ $ bump -v list a
 >stdout:
 a:1: a-b_c-123 /name: (1)/ static:2
 a:2: a-b_c-123 link "title 1" url1
-a:2: a-b_c-123 link title2 url2
+a:3: a-b_c-123 link "title2" url2
