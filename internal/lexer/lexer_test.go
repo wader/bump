@@ -54,6 +54,73 @@ func TestScan(t *testing.T) {
 				},
 			},
 		},
+		{
+			makeScanFn: func(vars map[string]*string) lexer.ScanFn {
+				return lexer.Concat(
+					lexer.Var("name", vars["name"], lexer.Or(
+						lexer.Quoted(`"`),
+						lexer.Re(regexp.MustCompile(`\w`)),
+					)),
+					lexer.Re(regexp.MustCompile(`\s`)),
+					lexer.Var("title", vars["title"], lexer.Or(
+						lexer.Quoted(`"`),
+						lexer.Re(regexp.MustCompile(`\w`)),
+					)),
+					lexer.Re(regexp.MustCompile(`\s`)),
+					lexer.Var("rest", vars["rest"], lexer.Or(
+						lexer.Quoted(`"`),
+						lexer.Rest(1),
+					)),
+				)
+			},
+			vars: map[string]*string{
+				"name":  makeStr(),
+				"title": makeStr(),
+				"rest":  makeStr(),
+			},
+			inputs: []input{
+				{
+					s: `aaa bbb ccc ccc`,
+					expected: map[string]string{
+						"name":  "aaa",
+						"title": "bbb",
+						"rest":  "ccc ccc",
+					},
+				},
+				{
+					s: `"aaa aaa" bbb ccc ccc`,
+					expected: map[string]string{
+						"name":  "aaa aaa",
+						"title": "bbb",
+						"rest":  "ccc ccc",
+					},
+				},
+				{
+					s: `aaa "bbb bbb" ccc ccc`,
+					expected: map[string]string{
+						"name":  "aaa",
+						"title": "bbb bbb",
+						"rest":  "ccc ccc",
+					},
+				},
+				{
+					s: `"aaa aaa" "bbb bbb" ccc ccc`,
+					expected: map[string]string{
+						"name":  "aaa aaa",
+						"title": "bbb bbb",
+						"rest":  "ccc ccc",
+					},
+				},
+				{
+					s: `"aaa aaa" "bbb bbb" "ccc ccc"`,
+					expected: map[string]string{
+						"name":  "aaa aaa",
+						"title": "bbb bbb",
+						"rest":  "ccc ccc",
+					},
+				},
+			},
+		},
 	}
 	for _, tC := range testCases {
 		for _, i := range tC.inputs {

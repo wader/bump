@@ -104,6 +104,11 @@ func rangeOverlap(x1, x2, y1, y2 int) bool {
 	return x1 < y2 && y1 < x2
 }
 
+// scan name-with-no-space-or-quote-characters
+func makeNameScanFn() lexer.ScanFn {
+	return lexer.Re(regexp.MustCompile(`[^"\s]`))
+}
+
 // NewBumpFileSet creates a new BumpFileSet
 func NewBumpFileSet(
 	os OS,
@@ -408,14 +413,16 @@ func (fs *FileSet) findCheckByName(name string) *Check {
 func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters []filter.NamedFilter) error {
 	file.HasConfig = true
 
-	nameRest := strings.SplitN(line, " ", 2)
-	if len(nameRest) != 2 {
-		return fmt.Errorf("invalid name and arguments: %q", line)
-	}
-
-	name, rest := strings.TrimSpace(nameRest[0]), nameRest[1]
-	if name == "" {
-		return fmt.Errorf("name is empty")
+	var name string
+	var rest string
+	if _, err := lexer.Scan(line,
+		lexer.Concat(
+			lexer.Var("name", &name, makeNameScanFn()),
+			lexer.Re(regexp.MustCompile(`\s`)),
+			lexer.Var("rest", &rest, lexer.Rest(1)),
+		),
+	); err != nil {
+		return fmt.Errorf("invalid name and arguments: %w", err)
 	}
 
 	switch {
@@ -468,11 +475,16 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 			return fmt.Errorf("%s has not been defined yet", name)
 		}
 
-		kindReset := strings.SplitN(rest, " ", 2)
-		if len(kindReset) != 2 {
-			return fmt.Errorf("invalid kind and arguments: %q", line)
+		var kind string
+		if _, err := lexer.Scan(rest,
+			lexer.Concat(
+				lexer.Var("kind", &kind, lexer.Re(regexp.MustCompile(`\w`))),
+				lexer.Re(regexp.MustCompile(`\s`)),
+				lexer.Var("rest", &rest, lexer.Rest(1)),
+			),
+		); err != nil {
+			return fmt.Errorf("invalid name and arguments: %w", err)
 		}
-		kind, rest := strings.TrimSpace(kindReset[0]), kindReset[1]
 
 		switch kind {
 		case "command":
@@ -497,15 +509,15 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 				LineNr:  lineNr,
 			})
 		case "link":
-			// bump: <name> link <title>/"<title>" <url>
+			// bump: <name> link <title> <url>
 			var linkTitle string
 			var linkURL string
 			if _, err := lexer.Scan(rest,
 				lexer.Concat(
 					lexer.Var("title", &linkTitle, lexer.Or(
 						lexer.Quoted(`"`),
-						lexer.Re(regexp.MustCompile(`\w`))),
-					),
+						makeNameScanFn(),
+					)),
 					lexer.Re(regexp.MustCompile(`\s`)),
 					lexer.Var("URL", &linkURL, lexer.Rest(1)),
 				),

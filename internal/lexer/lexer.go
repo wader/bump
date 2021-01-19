@@ -12,7 +12,19 @@ type lexer struct {
 	p int
 }
 
+// ScanFn scans one character
+// s is one char or empty if at end
+// returns a string on success, empty if needs more or error on error
 type ScanFn func(s string) (string, error)
+
+func charToNice(s string) string {
+	switch s {
+	case "":
+		return "end"
+	default:
+		return fmt.Sprintf("%q", s)
+	}
+}
 
 func (l *lexer) scan(fn ScanFn) (string, int, error) {
 	slen := len(l.s)
@@ -29,6 +41,7 @@ func (l *lexer) scan(fn ScanFn) (string, int, error) {
 	return t, slen, err
 }
 
+// Scan a string
 func Scan(s string, fn ScanFn) (int, error) {
 	l := &lexer{s: s}
 	for {
@@ -39,6 +52,7 @@ func Scan(s string, fn ScanFn) (int, error) {
 	}
 }
 
+// Var names and assigns string on success
 func Var(name string, dest *string, fn ScanFn) func(s string) (string, error) {
 	return func(c string) (string, error) {
 		t, err := fn(c)
@@ -52,12 +66,13 @@ func Var(name string, dest *string, fn ScanFn) func(s string) (string, error) {
 	}
 }
 
+// Re scans using a regexp
 func Re(re *regexp.Regexp) func(s string) (string, error) {
 	start := true
 	sb := strings.Builder{}
 	return func(c string) (string, error) {
 		if start && !re.MatchString(c) {
-			return "", fmt.Errorf("expected %s", re)
+			return "", fmt.Errorf("unexpected %s, expected %s", charToNice(c), re)
 		}
 		start = false
 		if re.MatchString(c) {
@@ -68,12 +83,13 @@ func Re(re *regexp.Regexp) func(s string) (string, error) {
 	}
 }
 
+// Rest consumes the rest of the string assert it is at least min length
 func Rest(min int) func(s string) (string, error) {
 	sb := strings.Builder{}
 	return func(c string) (string, error) {
 		if c == "" {
 			if sb.Len() < min {
-				return "", fmt.Errorf("expected more characters")
+				return "", fmt.Errorf("unexpected end")
 			}
 			return sb.String(), nil
 		}
@@ -82,6 +98,7 @@ func Rest(min int) func(s string) (string, error) {
 	}
 }
 
+// Quoted scans a quoted string using q as quote character
 func Quoted(q string) func(s string) (string, error) {
 	const (
 		Start = iota
@@ -94,13 +111,13 @@ func Quoted(q string) func(s string) (string, error) {
 
 	return func(c string) (string, error) {
 		if c == "" && state != End {
-			return "", fmt.Errorf("found no ending %s", q)
+			return "", fmt.Errorf("found no quote ending")
 		}
 
 		switch state {
 		case Start:
 			if c != q {
-				return "", fmt.Errorf("expected %s", q)
+				return "", fmt.Errorf("unexpected %s, expected quote start", charToNice(c))
 			}
 			state = InRe
 			return "", nil
@@ -128,10 +145,11 @@ func Quoted(q string) func(s string) (string, error) {
 	}
 }
 
+// Or scans until one succeeds
 func Or(fns ...ScanFn) func(s string) (string, error) {
 	return func(c string) (string, error) {
 		if len(fns) == 0 && c != "" {
-			return "", errors.New("no match")
+			return "", errors.New("found no match")
 		}
 
 		var newFns []ScanFn
@@ -149,6 +167,7 @@ func Or(fns ...ScanFn) func(s string) (string, error) {
 	}
 }
 
+// Concat scans all in order
 func Concat(fns ...ScanFn) func(s string) (string, error) {
 	i := 0
 
@@ -157,7 +176,7 @@ func Concat(fns ...ScanFn) func(s string) (string, error) {
 			if c == "" {
 				return "", nil
 			}
-			return "", fmt.Errorf("unexpected %s", c)
+			return "", fmt.Errorf("unexpected %s", charToNice(c))
 		}
 		fn := fns[i]
 

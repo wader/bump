@@ -1,0 +1,10 @@
+/a:
+bump: a-b_c-123 /name: (1)/ static:2
+bump: a-b_c-123 link "title 1" url1
+bump: a-b_c-123 link title2 url2
+name: 1
+$ bump -v list a
+>stdout:
+a:1: a-b_c-123 /name: (1)/ static:2
+a:2: a-b_c-123 link "title 1" url1
+a:2: a-b_c-123 link title2 url2
