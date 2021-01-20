@@ -39,7 +39,7 @@ func (cmd Command) filters() []filter.NamedFilter {
 	return all.Filters()
 }
 
-func (cmd Command) help(flags *flag.FlagSet) string {
+func (c Command) help(flags *flag.FlagSet) string {
 	text := `
 Usage: {{ARGV0}} [OPTIONS] COMMAND
 OPTIONS:
@@ -84,15 +84,15 @@ FILTER
 	optionHelp := strings.Join(optionsHelps, "\n")
 
 	var filterHelps []string
-	for _, nf := range cmd.filters() {
+	for _, nf := range c.filters() {
 		syntax, _, _ := filter.ParseHelp(nf.Help)
 		filterHelps = append(filterHelps, "  "+strings.Join(syntax, " | "))
 	}
 	filterHelp := strings.Join(filterHelps, "\n")
 
 	return strings.NewReplacer(
-		"{{ARGV0}}", cmd.OS.Args()[0],
-		"{{VERSION}}", cmd.Version,
+		"{{ARGV0}}", c.OS.Args()[0],
+		"{{VERSION}}", c.Version,
 		"{{OPTIONS_HELP}}", optionHelp,
 		"{{FILTER_HELP}}", filterHelp,
 	).Replace(text)
@@ -126,30 +126,30 @@ Examples:
 }
 
 // Run bump command
-func (cmd Command) Run() []error {
-	errs := cmd.run()
+func (c Command) Run() []error {
+	errs := c.run()
 	for _, err := range errs {
-		fmt.Fprintln(cmd.OS.Stderr(), err)
+		fmt.Fprintln(c.OS.Stderr(), err)
 	}
 	return errs
 }
 
-func (cmd Command) run() []error {
+func (c Command) run() []error {
 	var bumpfile string
 	var include string
 	var exclude string
 	var verbose bool
 	var runCommands bool
 
-	flags := flag.NewFlagSet(cmd.OS.Args()[0], flag.ContinueOnError)
+	flags := flag.NewFlagSet(c.OS.Args()[0], flag.ContinueOnError)
 	flags.StringVar(&bumpfile, "f", BumpfileName, "Bumpfile to read")
 	flags.StringVar(&include, "i", "", "Comma separated names to include")
 	flags.StringVar(&exclude, "e", "", "Comma separated names to exclude")
 	flags.BoolVar(&verbose, "v", false, "Verbose")
 	flags.BoolVar(&runCommands, "r", false, "Run update commands")
-	flags.SetOutput(cmd.OS.Stderr())
+	flags.SetOutput(c.OS.Stderr())
 	flags.Usage = func() {
-		fmt.Fprint(flags.Output(), cmd.help(flags))
+		fmt.Fprint(flags.Output(), c.help(flags))
 	}
 	parseFlags := func(args []string) ([]error, bool) {
 		err := flags.Parse(args)
@@ -162,7 +162,7 @@ func (cmd Command) run() []error {
 		return nil, true
 	}
 
-	if err, ok := parseFlags(cmd.OS.Args()[1:]); err != nil || !ok {
+	if err, ok := parseFlags(c.OS.Args()[1:]); err != nil || !ok {
 		return err
 	}
 	if len(flags.Args()) == 0 {
@@ -175,7 +175,7 @@ func (cmd Command) run() []error {
 	}
 
 	if command == "version" {
-		fmt.Fprintf(cmd.OS.Stdout(), "%s\n", cmd.Version)
+		fmt.Fprintf(c.OS.Stdout(), "%s\n", c.Version)
 		return nil
 	} else if command == "help" {
 		filterName := flags.Arg(0)
@@ -183,13 +183,13 @@ func (cmd Command) run() []error {
 			flags.Usage()
 			return nil
 		}
-		for _, nf := range cmd.filters() {
+		for _, nf := range c.filters() {
 			if filterName == nf.Name {
-				fmt.Fprint(cmd.OS.Stdout(), cmd.helpFilter(nf))
+				fmt.Fprint(c.OS.Stdout(), c.helpFilter(nf))
 				return nil
 			}
 		}
-		fmt.Fprintf(cmd.OS.Stdout(), "Filter not found\n")
+		fmt.Fprintf(c.OS.Stdout(), "Filter not found\n")
 		return nil
 	}
 
@@ -213,7 +213,7 @@ func (cmd Command) run() []error {
 			return []error{errors.New("both bumpfile and file arguments can't be specified")}
 		}
 
-		bfs, errs = bump.NewBumpFileSet(cmd.OS, cmd.filters(), bumpfile, files)
+		bfs, errs = bump.NewBumpFileSet(c.OS, c.filters(), bumpfile, files)
 		if errs != nil {
 			return errs
 		}
@@ -248,27 +248,27 @@ func (cmd Command) run() []error {
 	case "list":
 		for _, check := range bfs.SelectedChecks() {
 			if verbose {
-				fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s\n", check.File.Name, check.PipelineLineNr, check)
+				fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s\n", check.File.Name, check.PipelineLineNr, check)
 				for _, cs := range check.CommandShells {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s command %s\n", cs.File.Name, cs.LineNr, check.Name, cs.Cmd)
+					fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s command %s\n", cs.File.Name, cs.LineNr, check.Name, cs.Cmd)
 				}
 				for _, ca := range check.AfterShells {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s after %s\n", ca.File.Name, ca.LineNr, check.Name, ca.Cmd)
+					fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s after %s\n", ca.File.Name, ca.LineNr, check.Name, ca.Cmd)
 				}
 				for _, m := range check.Messages {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s message %s\n", m.File.Name, m.LineNr, check.Name, m.Message)
+					fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s message %s\n", m.File.Name, m.LineNr, check.Name, m.Message)
 				}
 				for _, l := range check.Links {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s link %q %s\n", l.File.Name, l.LineNr, check.Name, l.Title, l.URL)
+					fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s link %q %s\n", l.File.Name, l.LineNr, check.Name, l.Title, l.URL)
 				}
 			} else {
-				fmt.Fprintf(cmd.OS.Stdout(), "%s\n", check.Name)
+				fmt.Fprintf(c.OS.Stdout(), "%s\n", check.Name)
 			}
 		}
 	case "current":
 		for _, check := range bfs.SelectedChecks() {
-			for _, c := range check.Currents {
-				fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s %s\n", c.File.Name, c.LineNr, check.Name, c.Version)
+			for _, current := range check.Currents {
+				fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s %s\n", current.File.Name, current.LineNr, check.Name, current.Version)
 			}
 		}
 	case "check", "diff", "update":
@@ -281,52 +281,52 @@ func (cmd Command) run() []error {
 		case "check":
 			if verbose {
 				for _, check := range bfs.Checks {
-					for _, c := range check.Currents {
-						fmt.Fprintf(cmd.OS.Stdout(), "%s:%d: %s %s -> %s %.3fs\n",
-							c.File.Name, c.LineNr, check.Name, c.Version, check.Latest,
+					for _, current := range check.Currents {
+						fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s %s -> %s %.3fs\n",
+							current.File.Name, current.LineNr, check.Name, current.Version, check.Latest,
 							float32(check.PipelineDuration.Milliseconds())/1000.0)
 					}
 				}
 			} else {
 				for _, vs := range ua.VersionChanges {
-					fmt.Fprintf(cmd.OS.Stdout(), "%s %s\n", vs.Check.Name, vs.Check.Latest)
+					fmt.Fprintf(c.OS.Stdout(), "%s %s\n", vs.Check.Name, vs.Check.Latest)
 				}
 			}
 		case "diff":
 			for _, fc := range ua.FileChanges {
-				fmt.Fprint(cmd.OS.Stdout(), fc.Diff)
+				fmt.Fprint(c.OS.Stdout(), fc.Diff)
 			}
 		case "update":
 			for _, fc := range ua.FileChanges {
-				if err := cmd.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
+				if err := c.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
 					return []error{err}
 				}
 			}
 			if runCommands {
 				for _, rs := range ua.RunShells {
 					if verbose {
-						fmt.Fprintf(cmd.OS.Stdout(), "%s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
+						fmt.Fprintf(c.OS.Stdout(), "%s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
 					}
-					if err := cmd.OS.Shell(rs.Cmd, rs.Env); err != nil {
+					if err := c.OS.Shell(rs.Cmd, rs.Env); err != nil {
 						return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
 					}
 				}
 			} else if len(ua.RunShells) > 0 {
 				for _, rs := range ua.RunShells {
-					fmt.Fprintf(cmd.OS.Stdout(), "skipping %s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
+					fmt.Fprintf(c.OS.Stdout(), "skipping %s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
 				}
 			}
 		}
 	case "pipeline":
 		plStr := flags.Arg(0)
-		pl, err := pipeline.New(cmd.filters(), plStr)
+		pl, err := pipeline.New(c.filters(), plStr)
 		if err != nil {
 			return []error{err}
 		}
 		logFn := func(format string, v ...interface{}) {}
 		if verbose {
 			logFn = func(format string, v ...interface{}) {
-				fmt.Fprintf(cmd.OS.Stderr(), format+"\n", v...)
+				fmt.Fprintf(c.OS.Stderr(), format+"\n", v...)
 			}
 		}
 		logFn("Parsed pipeline: %s", pl)
@@ -334,7 +334,7 @@ func (cmd Command) run() []error {
 		if err != nil {
 			return []error{err}
 		}
-		fmt.Fprintf(cmd.OS.Stdout(), "%s\n", v)
+		fmt.Fprintf(c.OS.Stdout(), "%s\n", v)
 	default:
 		flags.Usage()
 		return []error{fmt.Errorf("unknown command: %s", command)}

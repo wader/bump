@@ -13,3 +13,12 @@ name: 1
 $ bump check
 >stdout:
 name 2
+---
+/Bumpfile:
+name /name: (1)/ static:2
+a
+/a:
+name: 1
+$ bump -v check
+>stdout:
+a:1: name 1 -> 2 0.000s

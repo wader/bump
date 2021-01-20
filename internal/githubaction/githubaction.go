@@ -81,32 +81,40 @@ type Command struct {
 }
 
 // Run bump in a github action environment
-func (cmd Command) Run() []error {
-	errs := cmd.run()
+func (c Command) Run() []error {
+	errs := c.run()
 	for _, err := range errs {
-		fmt.Fprintln(cmd.OS.Stderr(), err)
+		fmt.Fprintln(c.OS.Stderr(), err)
 	}
 
 	return errs
 }
 
-func (cmd Command) runExecs(argss [][]string) error {
+func (c Command) execs(argss [][]string) error {
 	for _, args := range argss {
-		fmt.Printf("> %s\n", strings.Join(args, " "))
-		if err := cmd.OS.Exec(args, nil); err != nil {
+		fmt.Printf("exec> %s\n", strings.Join(args, " "))
+		if err := c.OS.Exec(args, nil); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (cmd Command) run() []error {
-	ae, err := github.NewActionEnv(cmd.OS.Getenv, cmd.Version)
+func (c Command) shell(cmd string, env []string) error {
+	fmt.Printf("shell> %s %s\n", strings.Join(env, " "), cmd)
+	if err := c.OS.Shell(cmd, env); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c Command) run() []error {
+	ae, err := github.NewActionEnv(c.OS.Getenv, c.Version)
 	if err != nil {
 		return []error{err}
 	}
 	// TODO: used in tests
-	ae.Client.BaseURL = cmd.OS.Getenv("GITHUB_API_URL")
+	ae.Client.BaseURL = c.OS.Getenv("GITHUB_API_URL")
 
 	if ae.SHA == "" {
 		return []error{fmt.Errorf("GITHUB_SHA not set")}
@@ -140,7 +148,7 @@ func (cmd Command) run() []error {
 	}
 
 	pushURL := fmt.Sprintf("https://%s:%s@github.com/%s.git", ae.Actor, ae.Client.Token, ae.Repository)
-	err = cmd.runExecs([][]string{
+	err = c.execs([][]string{
 		{"git", "config", "--global", "user.name", userName},
 		{"git", "config", "--global", "user.email", userEmail},
 		{"git", "remote", "set-url", "--push", "origin", pushURL},
@@ -151,15 +159,15 @@ func (cmd Command) run() []error {
 
 	// TODO: whitespace in filenames
 	filesParts := strings.Fields(files)
-	bfs, errs := bump.NewBumpFileSet(cmd.OS, all.Filters(), bumpfile, filesParts)
+	bfs, errs := bump.NewBumpFileSet(c.OS, all.Filters(), bumpfile, filesParts)
 	if errs != nil {
 		return errs
 	}
 
-	for _, c := range bfs.Checks {
+	for _, check := range bfs.Checks {
 		// only concider this check for update actions
 		bfs.SkipCheckFn = func(skipC *bump.Check) bool {
-			return skipC.Name != c.Name
+			return skipC.Name != check.Name
 		}
 
 		ua, errs := bfs.UpdateActions()
@@ -167,18 +175,18 @@ func (cmd Command) run() []error {
 			return errs
 		}
 
-		fmt.Printf("Checking %s\n", c.Name)
+		fmt.Printf("Checking %s\n", check.Name)
 
-		if !c.HasUpdate() {
+		if !check.HasUpdate() {
 			fmt.Printf("  No updates\n")
 
 			// TODO: close if PR is open?
 			continue
 		}
 
-		fmt.Printf("  Updateable to %s\n", c.Latest)
+		fmt.Printf("  Updateable to %s\n", check.Latest)
 
-		templateReplacerFn := CheckTemplateReplaceFn(c)
+		templateReplacerFn := CheckTemplateReplaceFn(check)
 
 		branchName, err := templateReplacerFn(branchTemplate)
 		if err != nil {
@@ -203,13 +211,13 @@ func (cmd Command) run() []error {
 		}
 
 		// reset HEAD back to triggering commit before each PR
-		err = cmd.runExecs([][]string{{"git", "reset", "--hard", ae.SHA}})
+		err = c.execs([][]string{{"git", "reset", "--hard", ae.SHA}})
 		if err != nil {
 			return []error{err}
 		}
 
 		for _, fc := range ua.FileChanges {
-			if err := cmd.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
+			if err := c.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
 				return []error{err}
 			}
 
@@ -217,7 +225,7 @@ func (cmd Command) run() []error {
 		}
 
 		for _, rs := range ua.RunShells {
-			if err := cmd.OS.Shell(rs.Cmd, rs.Env); err != nil {
+			if err := c.shell(rs.Cmd, rs.Env); err != nil {
 				return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
 			}
 		}
@@ -235,7 +243,7 @@ func (cmd Command) run() []error {
 			return []error{fmt.Errorf("title template error: %w", err)}
 		}
 
-		err = cmd.runExecs([][]string{
+		err = c.execs([][]string{
 			{"git", "diff"},
 			{"git", "add", "--all"},
 			{"git", "commit", "--message", title, "--message", commitBody},
