@@ -237,7 +237,7 @@ func (cmd Command) run() []error {
 
 		err = cmd.runExecs([][]string{
 			{"git", "diff"},
-			{"git", "add", "--update"},
+			{"git", "add", "--all"},
 			{"git", "commit", "--message", title, "--message", commitBody},
 			// force so if for some reason there was an existing closed update PR with the same name
 			{"git", "push", "--force", "origin", "HEAD:refs/heads/" + branchName},
