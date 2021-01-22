@@ -39,7 +39,7 @@ where important libraries are automatically kept up to date using the bump githu
 
 ## GitHub action
 
-Bump can be used as a github action using the action `wader/bump@master`
+Bump can be used as a github action using the action `wader/bump/action@master`
 or by [providing it and referencing yourself](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/configuring-a-workflow#referencing-actions-in-your-workflow)
 Here is a workflow that will read `Bumpfile` and look for new versions and creates PRs once per day at 9 UTC:
 
@@ -68,9 +68,9 @@ Note that if you want bump PRs to trigger other actions like CI builds
 with repo access and add it as a secret. For example
 add a secret named `BUMP_TOKEN` and do `GITHUB_TOKEN: ${{ secrets.BUMP_TOKEN }}`.
 
-These actions are available:  
-`wader/bump/action@master` is alpine with git and curl  
-`wader/bump/action/go@master` is alpine with git, curl and go  
+These actions with different environments are available:  
+`wader/bump/action@master` alpine with git and curl  
+`wader/bump/action/go@master` alpine with git, curl and go  
 
 ## Install
 
