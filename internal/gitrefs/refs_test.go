@@ -64,6 +64,7 @@ func TestLocalRepo(t *testing.T) {
 func TestRemoteRepos(t *testing.T) {
 	for _, rawurl := range []string{
 		"https://code.videolan.org/videolan/x264.git",
+		"https://github.com/FFmpeg/FFmpeg",
 		"https://github.com/FFmpeg/FFmpeg.git",
 		"git://github.com/FFmpeg/FFmpeg.git",
 		"https://aomedia.googlesource.com/aom",

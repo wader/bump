@@ -196,15 +196,24 @@ func (h HTTPProto) Refs(u *url.URL) ([]Ref, error) {
 	if client == nil {
 		client = http.DefaultClient
 	}
-	r, err := client.Get(u.String() + "/info/refs?service=git-upload-pack")
+
+	req, err := http.NewRequest(http.MethodGet, u.String()+"/info/refs?service=git-upload-pack", nil)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close()
-	if r.Header.Get("Content-Type") == "application/x-git-upload-pack-advertisement" {
-		return HTTPSmartProtocol(r.Body)
+	// some git hosts behave differently based on this, github allows
+	// to skip .git if set for example
+	req.Header.Set("User-Agent", "git/1.0")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
 	}
-	return HTTPDumbProtocol(r.Body)
+	defer resp.Body.Close()
+	if resp.Header.Get("Content-Type") == "application/x-git-upload-pack-advertisement" {
+		return HTTPSmartProtocol(resp.Body)
+	}
+	return HTTPDumbProtocol(resp.Body)
 }
 
 // GitProto implements gits own protocol
