@@ -49,24 +49,24 @@ static:ab|re:/(?P<name>.)(?P<value>.)/
 static:ab|re:/(?P<name>.)(?P<value>.)/|@value
 `[1:]
 
-func parse(delim string, s string) (re *regexp.Regexp, expand string, err error) {
+func parse(delim string, s string) (re *regexp.Regexp, hasExpand bool, expand string, err error) {
 	p := strings.Split(s, delim)
 	if len(p) == 3 && p[0] == "" && p[2] == "" {
 		// /re/ -> ["", "re", ""]
 		re, err := regexp.Compile(p[1])
 		if err != nil {
-			return nil, "", err
+			return nil, false, "", err
 		}
-		return re, "", nil
+		return re, false, "", nil
 	} else if len(p) == 4 && p[0] == "" && p[3] == "" {
 		// /re/expand/ -> ["", "re", "expand", ""]
 		re, err := regexp.Compile(p[1])
 		if err != nil {
-			return nil, "", err
+			return nil, false, "", err
 		}
-		return re, p[2], nil
+		return re, true, p[2], nil
 	} else {
-		return nil, "", fmt.Errorf("should be /re/ or /re/template/")
+		return nil, false, "", fmt.Errorf("should be /re/ or /re/template/")
 	}
 }
 
@@ -81,7 +81,7 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 		delim = arg[0:1]
 	}
 
-	re, expand, err := parse(delim, arg)
+	re, hasExpand, expand, err := parse(delim, arg)
 	if err != nil {
 		if prefix == "" {
 			return nil, nil
@@ -89,18 +89,19 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 		return nil, err
 	}
 
-	return reFilter{re: re, delim: delim, expand: expand}, nil
+	return reFilter{re: re, delim: delim, hasExpand: hasExpand, expand: expand}, nil
 }
 
 type reFilter struct {
-	re     *regexp.Regexp
-	delim  string
-	expand string
+	re        *regexp.Regexp
+	delim     string
+	hasExpand bool
+	expand    string
 }
 
 func (f reFilter) String() string {
 	ss := []string{f.re.String()}
-	if f.expand != "" {
+	if f.hasExpand {
 		ss = append(ss, f.expand)
 	}
 
@@ -121,9 +122,7 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 				continue
 			}
 
-			if f.expand == "" {
-				filtered = append(filtered, v)
-			} else {
+			if f.hasExpand {
 				values := map[string]string{}
 				for k, v := range v {
 					values[k] = v
@@ -131,6 +130,8 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 				values[versionKey] = f.re.ReplaceAllLiteralString(value, f.expand)
 
 				filtered = append(filtered, filter.NewVersionWithName(values["name"], values))
+			} else {
+				filtered = append(filtered, v)
 			}
 		}
 	} else {
@@ -157,7 +158,7 @@ func (f reFilter) Filter(versions filter.Versions, versionKey string) (filter.Ve
 					values[subexpNames[smi]] = value[sm[smi*2]:sm[smi*2+1]]
 				}
 
-				if f.expand != "" {
+				if f.hasExpand {
 					values[versionKey] = string(f.re.ExpandString(nil, f.expand, value, sm))
 				} else if !foundNamedSubexp && sm[2] != -1 {
 					// TODO: no name subexp, use first?

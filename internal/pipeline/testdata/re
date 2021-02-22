@@ -8,6 +8,9 @@ re:/a/ -> re:/a/
     a:1,b:2,c:3 -> a:1 a
 
 # simple replace
+re:/a// -> re:/a//
+    bab:1 -> bb:1 bb
+
 re:/a/b/ -> re:/a/b/
     a:1,b:2,c:3 -> b:1 b
 re:/a/b/ -> re:/a/b/
