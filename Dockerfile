@@ -17,7 +17,7 @@ RUN cmd/bump/main_test.sh /bump
 
 # bump: alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 # bump: alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-FROM alpine:3.13.4 AS bump-base
+FROM alpine:3.13.5 AS bump-base
 # git is used by github action code
 # curl for convenience
 RUN apk add --no-cache \
