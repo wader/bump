@@ -219,7 +219,7 @@ go 1.12
 
 require (
   // bump: leaktest /github.com\/fortytw2\/leaktest v(.*)/ git:https://github.com/fortytw2/leaktest.git|^1
-  // bump: leaktest command go get github.com/fortytw2/leaktest@v$LATEST && go mod tidy
+  // bump: leaktest command go get -d github.com/fortytw2/leaktest@v$LATEST && go mod tidy
   github.com/fortytw2/leaktest v1.2.0
 )
 ```
