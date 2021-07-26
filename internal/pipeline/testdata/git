@@ -5,3 +5,7 @@ https://a.git -> git:https://a.git
 
 git:https://github.com/torvalds/linux.git|^3 -> git:https://github.com/torvalds/linux.git|semver:^3
     -> 3.19:name=3.19:commit=e24f071559c7a928a3033e9fe9f68e52f4f6ec01 3.19
+
+# test dash in git tags
+git:https://github.com/actions/go-versions.git|/(.*)-.*/$1/|^1.16.6 -> git:https://github.com/actions/go-versions.git|re:/(.*)-.*/$1/|semver:^1.16.6
+    -> 1.16.6:commit=8ad5091061991f65f7ff552859ac8afd2a141fe6 1.16.6

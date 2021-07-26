@@ -27,7 +27,7 @@ git://github.com/git/git.git|*
 
 // default ref filter
 // refs/tags/<non-digits><version-number> -> version-number
-var refFilterRe = regexp.MustCompile(`^refs/tags/[^\d]*([\d\.]+)$`)
+var refFilterRe = regexp.MustCompile(`^refs/tags/[^\d]*([\d\.\-]+)$`)
 
 // New git filter
 func New(prefix string, arg string) (filter filter.Filter, err error) {
