@@ -61,7 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-See [action.yml](action.yml) for input arguments.
+See [action.yml](action/action.yml) for input arguments.
 
 Note that if you want bump PRs to trigger other actions like CI builds
 [you currently have to use a personal access token](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#about-workflow-events)
