@@ -61,11 +61,11 @@ func main() {
 		)
 
 		fmt.Fprintf(listBuf, replacer.Replace(`
-[{{name}}](#{{name}}) {{syntax}}  
+[{{name}}](#filter-{{name}}) {{syntax}}<br>
 `[1:]))
 
 		fmt.Fprintf(filtersBuf, replacer.Replace(`
-### {{name}}
+### {{name}}<span id="filter-{{name}}">
 
 {{syntax}}
 

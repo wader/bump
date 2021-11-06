@@ -20,14 +20,14 @@ $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.13.0
+alpine 3.14.2
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.13.0 AS builder
++FROM alpine:3.14.2 AS builder
  
 # Write changes
 $ bump update
@@ -275,13 +275,13 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.3.1
+4.4.1
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-a3a26a98652fbdaa474e95cfbc12f68b64ca1e6f
+2aa4f5cc8be5e3168191cd13a61178a167687eac
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.15.6
+1.17.3
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -294,18 +294,18 @@ produces versions, `re` and `semver` transforms and filters.
 
 [filtersmarkdown]: sh-start
 
-[git](#git) `git:<repo>` or `<repo.git>`  
-[gitrefs](#gitrefs) `gitrefs:<repo>`  
-[docker](#docker) `docker:<image>`  
-[svn](#svn) `svn:<repo>`  
-[fetch](#fetch) `fetch:<url>`, `<http://>` or `<https://>`  
-[semver](#semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`  
-[re](#re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`  
-[sort](#sort) `sort`  
-[key](#key) `key:<name>` or `@<name>`  
-[static](#static) `static:<name[:key=value:...]>,...`  
-[err](#err) `err:<error>`  
-### git
+[git](#filter-git) `git:<repo>` or `<repo.git>`<br>
+[gitrefs](#filter-gitrefs) `gitrefs:<repo>`<br>
+[docker](#filter-docker) `docker:<image>`<br>
+[svn](#filter-svn) `svn:<repo>`<br>
+[fetch](#filter-fetch) `fetch:<url>`, `<http://>` or `<https://>`<br>
+[semver](#filter-semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`<br>
+[re](#filter-re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`<br>
+[sort](#filter-sort) `sort`<br>
+[key](#filter-key) `key:<name>` or `@<name>`<br>
+[static](#filter-static) `static:<name[:key=value:...]>,...`<br>
+[err](#filter-err) `err:<error>`<br>
+### git<span id="filter-git">
 
 `git:<repo>` or `<repo.git>`
 
@@ -316,12 +316,12 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.30.0
+2.33.1
 $ bump pipeline 'git://github.com/git/git.git|*'
-2.30.0
+2.33.1
 ```
 
-### gitrefs
+### gitrefs<span id="filter-gitrefs">
 
 `gitrefs:<repo>`
 
@@ -335,7 +335,7 @@ $ bump pipeline 'gitrefs:https://github.com/git/git.git'
 HEAD
 ```
 
-### docker
+### docker<span id="filter-docker">
 
 `docker:<image>`
 
@@ -343,10 +343,10 @@ Produce versions from a image on ducker hub.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.13.0
+3.14.2
 ```
 
-### svn
+### svn<span id="filter-svn">
 
 `svn:<repo>`
 
@@ -355,10 +355,10 @@ be the tag or branch name, version the revision.
 
 ```sh
 $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
-1.14.0
+1.14.1
 ```
 
-### fetch
+### fetch<span id="filter-fetch">
 
 `fetch:<url>`, `<http://>` or `<https://>`
 
@@ -369,7 +369,7 @@ $ bump pipeline 'fetch:http://libjpeg.sourceforge.net|/latest release is version
 6b
 ```
 
-### semver
+### semver<span id="filter-semver">
 
 `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`
 
@@ -392,7 +392,7 @@ $ bump pipeline 'static:1.2.3|n.n'
 1.2
 ```
 
-### re
+### re<span id="filter-re">
 
 `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`
 
@@ -438,7 +438,7 @@ $ bump pipeline 'static:ab|re:/(?P<name>.)(?P<value>.)/|@value'
 b
 ```
 
-### sort
+### sort<span id="filter-sort">
 
 `sort`
 
@@ -449,7 +449,7 @@ $ bump pipeline 'static:a,b,c|sort'
 c
 ```
 
-### key
+### key<span id="filter-key">
 
 `key:<name>` or `@<name>`
 
@@ -466,7 +466,7 @@ $ bump pipeline 'static:1.0:hello=world|key:hello'
 world
 ```
 
-### static
+### static<span id="filter-static">
 
 `static:<name[:key=value:...]>,...`
 
@@ -477,7 +477,7 @@ $ bump pipeline 'static:1,2,3,4:key=value:a=b|sort'
 4
 ```
 
-### err
+### err<span id="filter-err">
 
 `err:<error>`
 
