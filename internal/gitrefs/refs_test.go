@@ -66,7 +66,6 @@ func TestRemoteRepos(t *testing.T) {
 		"https://code.videolan.org/videolan/x264.git",
 		"https://github.com/FFmpeg/FFmpeg",
 		"https://github.com/FFmpeg/FFmpeg.git",
-		"git://github.com/FFmpeg/FFmpeg.git",
 		"https://aomedia.googlesource.com/aom",
 	} {
 		t.Run(rawurl, func(t *testing.T) {
