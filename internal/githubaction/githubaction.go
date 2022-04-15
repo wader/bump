@@ -149,6 +149,9 @@ func (c Command) run() []error {
 
 	pushURL := fmt.Sprintf("https://%s:%s@github.com/%s.git", ae.Actor, ae.Client.Token, ae.Repository)
 	err = c.execs([][]string{
+		// safe.directory workaround for CVE-2022-24765
+		// https://github.blog/2022-04-12-git-security-vulnerability-announced/
+		{"git", "config", "--global", "--add", "safe.directory", ae.Workspace},
 		{"git", "config", "--global", "user.name", userName},
 		{"git", "config", "--global", "user.email", userEmail},
 		{"git", "remote", "set-url", "--push", "origin", pushURL},
