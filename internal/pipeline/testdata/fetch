@@ -2,5 +2,5 @@ http://a -> fetch:http://a
 https://a -> fetch:https://a
 fetch:http://a -> fetch:http://a
 fetch:https://a -> fetch:https://a
-fetch:https://www.github.com|/<title>(\w+)/ -> fetch:https://www.github.com|re:/<title>(\w+)/
+fetch:https://www.github.com|/<title>(\w+):/ -> fetch:https://www.github.com|re:/<title>(\w+):/
     -> GitHub GitHub
