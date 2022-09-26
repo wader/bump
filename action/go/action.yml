@@ -1,7 +1,9 @@
 name: 'Bump versions'
 description: 'Use bump to create version update pull requests'
-icon: 'chevrons-up'
 author: 'Mattias Wadman'
+branding:
+  icon: 'chevrons-up'
+  color: 'green'
 runs:
   using: 'docker'
   image: 'docker://mwader/bump:go'
@@ -17,7 +19,7 @@ inputs:
   title_template:
     description: 'Commit and pull request title template'
     required: false
-    default: 'Update {{.Name}} from {{join .Current ", "}} to {{.Latest}}'
+    default: 'Update {{.Name}} to {{.Latest}} from {{join .Current ", "}}'
   commit_body_template:
     description: 'Commit body template'
     required: false
