@@ -31,19 +31,16 @@ func NewFromImage(image string) (*Registry, error) {
 		// image
 		r.Image = "library/" + image
 		return &r, nil
-	default:
-	}
-
-	if strings.Contains(parts[0], ".") {
+	case strings.Contains(parts[0], "."):
 		// host.tldr/image
 		r.Host = parts[0]
 		r.Image = strings.Join(parts[1:], "/")
 		return &r, nil
+	default:
+		// repo/image
+		r.Image = image
+		return &r, nil
 	}
-
-	// repo/image
-	r.Image = image
-	return &r, nil
 }
 
 // The WWW-Authenticate Response Header Field
