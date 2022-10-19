@@ -50,7 +50,16 @@ type WWWAuth struct {
 	Params map[string]string
 }
 
-// WWW-Authenticate: Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:org/image:pull""
+// quoteSplit splits but respects quotes and escapes, and can mix quotes
+func quoteSplit(s string, sep rune) ([]string, error) {
+	r := csv.NewReader(strings.NewReader(s))
+	// allows mix quotes and explicit ","
+	r.LazyQuotes = true
+	r.Comma = rune(sep)
+	return r.Read()
+}
+
+// WWW-Authenticate: Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:org/image:pull"
 func ParseWWWAuth(s string) (WWWAuth, error) {
 	var w WWWAuth
 	parts := strings.SplitN(s, " ", 2)
@@ -59,20 +68,14 @@ func ParseWWWAuth(s string) (WWWAuth, error) {
 	}
 	w.Scheme = parts[0]
 
-	r := csv.NewReader(strings.NewReader(strings.TrimSpace(parts[1])))
-	// allows mix quotes and explicit ","
-	r.LazyQuotes = true
-	r.Comma = rune(',')
-	pairs, pairsErr := r.Read()
+	pairs, pairsErr := quoteSplit(strings.TrimSpace(parts[1]), ',')
 	if pairsErr != nil {
 		return WWWAuth{}, pairsErr
 	}
 
 	w.Params = map[string]string{}
 	for _, p := range pairs {
-		r := csv.NewReader(strings.NewReader(p))
-		r.Comma = rune('=')
-		kv, kvErr := r.Read()
+		kv, kvErr := quoteSplit(p, '=')
 		if kvErr != nil {
 			return WWWAuth{}, kvErr
 		}
@@ -101,8 +104,9 @@ func get(rawURL string, doAuth bool, token string, out interface{}) error {
 	}
 	defer r.Body.Close()
 
+	// 4xx some client error
 	if r.StatusCode/100 == 4 {
-		if doAuth && r.StatusCode == 401 {
+		if doAuth && r.StatusCode == http.StatusUnauthorized {
 			wwwAuth := r.Header.Get("WWW-Authenticate")
 			if wwwAuth == "" {
 				return fmt.Errorf("no WWW-Authenticate found")
@@ -135,6 +139,7 @@ func get(rawURL string, doAuth bool, token string, out interface{}) error {
 		return fmt.Errorf(r.Status)
 	}
 
+	// not 2xx success
 	if r.StatusCode/100 != 2 {
 		return fmt.Errorf("error response: %s", r.Status)
 	}
