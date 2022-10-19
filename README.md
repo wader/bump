@@ -20,14 +20,14 @@ $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.14.2
+alpine 3.16.2
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.14.2 AS builder
++FROM alpine:3.16.2 AS builder
  
 # Write changes
 $ bump update
@@ -275,13 +275,13 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.4.1
+4.4.3
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-2aa4f5cc8be5e3168191cd13a61178a167687eac
+3d69f9682f06bbf72e0cdcdc9e66c9307ed6b24f
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.17.3
+1.19.2
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -316,9 +316,7 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.33.1
-$ bump pipeline 'git://github.com/git/git.git|*'
-2.33.1
+2.38.1
 ```
 
 ### gitrefs<span id="filter-gitrefs">
@@ -339,11 +337,16 @@ HEAD
 
 `docker:<image>`
 
-Produce versions from a image on ducker hub.
+Produce versions from a image on ducker hub or other registry.
+Currently only supports anonymous access.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.14.2
+3.16.2
+$ bump pipeline 'docker:mwader/static-ffmpeg|^4'
+4.4.1
+$ bump pipeline 'docker:ghcr.io/nginx-proxy/nginx-proxy|^0.9'
+0.9.3
 ```
 
 ### svn<span id="filter-svn">
@@ -355,7 +358,7 @@ be the tag or branch name, version the revision.
 
 ```sh
 $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
-1.14.1
+1.14.2
 ```
 
 ### fetch<span id="filter-fetch">

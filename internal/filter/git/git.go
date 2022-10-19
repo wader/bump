@@ -22,7 +22,6 @@ the version found in the tag, commit the commit hash or tag object.
 Use gitrefs filter to get all refs unfiltered.
 
 https://github.com/git/git.git|*
-git://github.com/git/git.git|*
 `[1:]
 
 // default ref filter
