@@ -1,6 +1,6 @@
 # bump: golang /FROM golang:([\d.]+)/ docker:golang|^1
 # bump: golang link "Release notes" https://golang.org/doc/devel/release.html
-FROM golang:1.19.4-buster AS builder
+FROM golang:1.19.5-buster AS builder
 
 # patch is used by cmd/bump/main_test.sh to test diff
 RUN apt update && apt install -y patch
