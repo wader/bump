@@ -3,7 +3,9 @@ package svn
 import (
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/wader/bump/internal/filter"
@@ -71,6 +73,8 @@ func (f svnFilter) String() string {
 	return Name + ":" + f.repo
 }
 
+var elmRE = regexp.MustCompile(`</?[^ >]*?>`)
+
 func (f svnFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
 	req, err := http.NewRequest("PROPFIND", f.repo+"/tags/", nil)
 	if err != nil {
@@ -88,8 +92,30 @@ func (f svnFilter) Filter(versions filter.Versions, versionKey string) (filter.V
 		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	// HACK:
+	// go 1.20+ encoding/xml don't allow invalid xml with with colon in namespace
+	// as we only care about propstat > prop > version-name let's just mangle the exceeding colons for now
+	// https://issues.apache.org/jira/browse/SVN-1971
+	bodyBytes = elmRE.ReplaceAllFunc(bodyBytes, func(b []byte) []byte {
+		colons := 0
+		for i, c := range b {
+			if c != ':' {
+				continue
+			}
+			colons++
+			if colons >= 2 {
+				b[i] = '_'
+			}
+		}
+		return b
+	})
+
 	var m multistatus
-	if err := xml.NewDecoder(r.Body).Decode(&m); err != nil {
+	if err := xml.Unmarshal(bodyBytes, &m); err != nil {
 		return nil, "", err
 	}
 
