@@ -14,6 +14,7 @@ func Test(t *testing.T) {
 		Currents: []bump.Current{
 			{Version: "1"},
 			{Version: "2"},
+			{Version: "2"},
 		},
 		Messages: []bump.CheckMessage{
 			{Message: "msg1 $NAME/$CURRENT/$LATEST"},
@@ -31,7 +32,7 @@ func Test(t *testing.T) {
 		template string
 		expected string
 	}{
-		{`Update {{.Name}} from {{join .Current ", "}} to {{.Latest}}`, `Update aaa from 1, 2 to 3`},
+		{`Update {{.Name}} to {{.Latest}} from {{join .Current ", "}}`, `Update aaa to 3 from 1, 2`},
 		{
 			`` +
 				`{{range .Messages}}{{.}}{{"\n\n"}}{{end}}` +
