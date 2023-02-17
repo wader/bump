@@ -1,6 +1,6 @@
 module github.com/wader/bump
 
-go 1.12
+go 1.18
 
 require (
 	// bump: semver /github.com\/Masterminds\/semver\/v3 v(.*)/ git:https://github.com/Masterminds/semver|^3

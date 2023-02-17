@@ -9,6 +9,7 @@ import (
 	"github.com/wader/bump/internal/bump"
 	"github.com/wader/bump/internal/filter/all"
 	"github.com/wader/bump/internal/github"
+	sx "github.com/wader/bump/internal/slicex"
 )
 
 // CheckTemplateReplaceFn builds a function for doing template replacing for check
@@ -20,25 +21,22 @@ func CheckTemplateReplaceFn(c *bump.Check) func(s string) (string, error) {
 		"$CURRENT", c.Currents[0].Version,
 	)
 
-	var currentVersions []string
-	for _, c := range c.Currents {
-		currentVersions = append(currentVersions, c.Version)
-	}
-	var messages []string
-	for _, m := range c.Messages {
-		messages = append(messages, varReplacer.Replace(m.Message))
-	}
+	currentVersions := sx.Unique(sx.Map(c.Currents, func(c bump.Current) string {
+		return c.Version
+	}))
+	messages := sx.Map(c.Messages, func(m bump.CheckMessage) string {
+		return varReplacer.Replace(m.Message)
+	})
 	type link struct {
 		Title string
 		URL   string
 	}
-	var links []link
-	for _, l := range c.Links {
-		links = append(links, link{
+	links := sx.Map(c.Links, func(l bump.CheckLink) link {
+		return link{
 			Title: varReplacer.Replace(l.Title),
 			URL:   varReplacer.Replace(l.URL),
-		})
-	}
+		}
+	})
 
 	tmplData := struct {
 		Name     string
