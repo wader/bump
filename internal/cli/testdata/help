@@ -33,6 +33,7 @@ PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
   git:<repo> | <repo.git>
   gitrefs:<repo>
+  depsdev:<system>:<package>
   docker:<image>
   svn:<repo>
   fetch:<url> | <http://> | <https://>
