@@ -20,14 +20,14 @@ $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.16.2
+alpine 3.17.3
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.16.2 AS builder
++FROM alpine:3.17.3 AS builder
  
 # Write changes
 $ bump update
@@ -131,6 +131,7 @@ PIPELINE is a filter pipeline: FILTER|FILTER|...
 FILTER
   git:<repo> | <repo.git>
   gitrefs:<repo>
+  depsdev:<system>:<package>
   docker:<image>
   svn:<repo>
   fetch:<url> | <http://> | <https://>
@@ -275,13 +276,13 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.4.3
+4.4.4
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-3d69f9682f06bbf72e0cdcdc9e66c9307ed6b24f
+c1738cdff0d3b6426f3e6fd9bf25af7d145ad26f
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.19.2
+1.20.3
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -296,6 +297,7 @@ produces versions, `re` and `semver` transforms and filters.
 
 [git](#filter-git) `git:<repo>` or `<repo.git>`<br>
 [gitrefs](#filter-gitrefs) `gitrefs:<repo>`<br>
+[depsdev](#filter-depsdev) `depsdev:<system>:<package>`<br>
 [docker](#filter-docker) `docker:<image>`<br>
 [svn](#filter-svn) `svn:<repo>`<br>
 [fetch](#filter-fetch) `fetch:<url>`, `<http://>` or `<https://>`<br>
@@ -316,7 +318,7 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.38.1
+2.40.0
 ```
 
 ### gitrefs<span id="filter-gitrefs">
@@ -333,6 +335,27 @@ $ bump pipeline 'gitrefs:https://github.com/git/git.git'
 HEAD
 ```
 
+### depsdev<span id="filter-depsdev">
+
+`depsdev:<system>:<package>`
+
+Produce versions from https://deps.dev.
+
+Supported package systems npm, go, maven, pypi and cargo.
+
+```sh
+$ bump pipeline 'depsdev:npm:react|*'
+18.2.0
+$ bump pipeline 'depsdev:go:golang.org/x/net'
+0.0.0-20180926154720-4dfa2610cdf3
+$ bump pipeline 'depsdev:maven:log4j:log4j|^1'
+1.2.17
+$ bump pipeline 'depsdev:pypi:av|*'
+10.0.0
+$ bump pipeline 'depsdev:cargo:serde|*'
+1.0.160
+```
+
 ### docker<span id="filter-docker">
 
 `docker:<image>`
@@ -342,7 +365,7 @@ Currently only supports anonymous access.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.16.2
+3.17.3
 $ bump pipeline 'docker:mwader/static-ffmpeg|^4'
 4.4.1
 $ bump pipeline 'docker:ghcr.io/nginx-proxy/nginx-proxy|^0.9'
