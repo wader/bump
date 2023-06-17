@@ -36,7 +36,7 @@ re:/(/ -> error:error parsing regexp: missing closing ): `(`
 re:/(// -> error:error parsing regexp: missing closing ): `(`
 
 static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2 -> static:aaa 1.1.1\naaa 3.1.2\naaa 1.1.1\n|re:/(?m:^.* (.*)$)/|semver:3.1.2
-    -> 3.1.2 3.1.2
+    -> 3.1.2,1.1.1,1.1.1 3.1.2
 
 # alternative delimiter
 re:#a# -> re:#a#
