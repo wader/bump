@@ -140,15 +140,18 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 	}
 
 	var latest *semverVersion
+	var latestIndex int
 	for i, v := range svs {
 		if f.constraint.Check(v.ver) {
 			if latest == nil || latest.ver.Compare(v.ver) == -1 {
 				latest = &svs[i]
+				latestIndex = i
 				continue
 			}
 
 			if len((*latest).v[versionKey]) <= len(v.v[versionKey]) {
 				latest = &svs[i]
+				latestIndex = i
 				continue
 			}
 		}
@@ -157,5 +160,10 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 		return nil, "", nil
 	}
 
-	return filter.Versions{(*latest).v}, versionKey, nil
+	var latestAndLower filter.Versions
+	for i := latestIndex; i >= 0; i-- {
+		latestAndLower = append(latestAndLower, svs[i].v)
+	}
+
+	return latestAndLower, versionKey, nil
 }

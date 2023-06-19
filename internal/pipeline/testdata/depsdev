@@ -1,10 +1,10 @@
-depsdev:npm:react|=18.2.0 -> depsdev:npm:react|semver:=18.2.0
-    -> 18.2.0 18.2.0
-depsdev:go:golang.org/x/net|=0.9.0 -> depsdev:go:golang.org/x/net|semver:=0.9.0
-    -> 0.9.0 0.9.0
-depsdev:maven:log4j:log4j|=1.2.17 -> depsdev:maven:log4j:log4j|semver:=1.2.17
-    -> 1.2.17 1.2.17
-depsdev:pypi:av|=10.0.0 -> depsdev:pypi:av|semver:=10.0.0
-    -> 10.0.0 10.0.0
-depsdev:cargo:serde|=1.0.160 -> depsdev:cargo:serde|semver:=1.0.160
-    -> 1.0.160 1.0.160
+depsdev:npm:react|/^[\d.]+$/|=0.0.2 -> depsdev:npm:react|re:/^[\d.]+$/|semver:=0.0.2
+    -> 0.0.2,0.0.1 0.0.2
+depsdev:go:golang.org/x/net|/^[\d.]+$/|=0.2.0 -> depsdev:go:golang.org/x/net|re:/^[\d.]+$/|semver:=0.2.0
+    -> 0.2.0,0.1.0 0.2.0
+depsdev:maven:log4j:log4j|=1.2.4 -> depsdev:maven:log4j:log4j|semver:=1.2.4
+    -> 1.2.4,1.1.3 1.2.4
+depsdev:pypi:av|=0.2.0 -> depsdev:pypi:av|semver:=0.2.0
+    -> 0.2.0,0.1.0 0.2.0
+depsdev:cargo:serde|=0.2.0 -> depsdev:cargo:serde|semver:=0.2.0
+    -> 0.2.0,0.0.0 0.2.0
