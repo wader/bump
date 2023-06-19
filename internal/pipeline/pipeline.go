@@ -55,7 +55,6 @@ func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn fu
 	versionKey := inVersionKey
 
 	for _, f := range pl {
-		before := vs
 		beforeVersionKey := versionKey
 		vs, versionKey, err = f.Filter(vs, versionKey)
 		if err != nil {
@@ -63,16 +62,15 @@ func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn fu
 		}
 
 		if logFn != nil {
-			after := vs
-			removed := before.Minus(after)
-			added := after.Minus(before)
 			if logFn != nil {
 				logFn("%s:", f)
-				logFn("  > %+v", before)
-				logFn("  + %+v", added)
-				logFn("  - %+v", removed)
+				for _, v := range vs {
+					logFn("  %v", v)
+				}
+				if len(vs) == 0 {
+					logFn("    (none)")
+				}
 				logFn("  @ %s -> %s", beforeVersionKey, versionKey)
-				logFn("  = %+v", vs)
 			}
 		}
 	}
