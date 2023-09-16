@@ -118,7 +118,9 @@ func (c Command) run() []error {
 		return []error{fmt.Errorf("GITHUB_SHA not set")}
 	}
 
-	files, _ := ae.Input("bump_files")
+	// support "bump_files" for backward compatibility
+	bumpFiles, _ := ae.Input("bump_files")
+	files, _ := ae.Input("files")
 	var bumpfile,
 		titleTemplate,
 		commitBodyTemplate,
@@ -159,8 +161,10 @@ func (c Command) run() []error {
 	}
 
 	// TODO: whitespace in filenames
-	filesParts := strings.Fields(files)
-	bfs, errs := bump.NewBumpFileSet(c.OS, all.Filters(), bumpfile, filesParts)
+	var filenames []string
+	filenames = append(filenames, strings.Fields(bumpFiles)...)
+	filenames = append(filenames, strings.Fields(files)...)
+	bfs, errs := bump.NewBumpFileSet(c.OS, all.Filters(), bumpfile, filenames)
 	if errs != nil {
 		return errs
 	}
@@ -185,7 +189,7 @@ func (c Command) run() []error {
 			continue
 		}
 
-		fmt.Printf("  Updateable to %s\n", check.Latest)
+		fmt.Printf("  Updatable to %s\n", check.Latest)
 
 		templateReplacerFn := CheckTemplateReplaceFn(check)
 
