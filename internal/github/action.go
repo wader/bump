@@ -65,6 +65,9 @@ func NewActionEnv(getenv GetenvFn, version string) (*ActionEnv, error) {
 		return nil, err
 	}
 	repositoryParts := strings.SplitN(repository, "/", 2)
+	if len(repositoryParts) < 2 {
+		return nil, fmt.Errorf("GITHUB_REPOSITORY has invalid value %q", repository)
+	}
 
 	client := &Client{
 		Token:   token,
