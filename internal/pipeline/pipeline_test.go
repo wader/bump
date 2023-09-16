@@ -2,7 +2,7 @@ package pipeline_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -208,7 +208,7 @@ func testPipelineTestCase(t *testing.T, tcs []testCase) {
 
 func TestPipeline(t *testing.T) {
 	const testDataDir = "testdata"
-	testDataFiles, err := ioutil.ReadDir(testDataDir)
+	testDataFiles, err := os.ReadDir(testDataDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func TestPipeline(t *testing.T) {
 		fi := fi
 		t.Run(fi.Name(), func(t *testing.T) {
 			t.Parallel()
-			b, err := ioutil.ReadFile(filepath.Join(testDataDir, fi.Name()))
+			b, err := os.ReadFile(filepath.Join(testDataDir, fi.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}

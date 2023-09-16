@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,12 +38,12 @@ func (OS) Stderr() io.Writer {
 
 // WriteFile writes os file
 func (OS) WriteFile(filename string, data []byte) error {
-	return ioutil.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0644)
 }
 
 // ReadFile read os file
 func (OS) ReadFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
+	return os.ReadFile(filename)
 }
 
 // Glob returns list of matched os files

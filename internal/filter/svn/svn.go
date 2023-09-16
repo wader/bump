@@ -3,7 +3,7 @@ package svn
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -92,7 +92,7 @@ func (f svnFilter) Filter(versions filter.Versions, versionKey string) (filter.V
 		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, "", err
 	}

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -251,7 +250,7 @@ func readSymref(gitPath string, p string) (string, error) {
 			return "", err
 		}
 
-		b, err := ioutil.ReadFile(filepath.Join(gitPath, dst))
+		b, err := os.ReadFile(filepath.Join(gitPath, dst))
 		if err != nil {
 			return dst, nil
 		}
@@ -259,7 +258,7 @@ func readSymref(gitPath string, p string) (string, error) {
 	}
 
 	// if "ref: path" try read content of file otherwise return just name of file
-	b, err := ioutil.ReadFile(fp)
+	b, err := os.ReadFile(fp)
 	if err != nil {
 		return "", nil
 	}
@@ -271,7 +270,7 @@ func readSymref(gitPath string, p string) (string, error) {
 	}
 
 	dst := parts[1]
-	b, err = ioutil.ReadFile(filepath.Join(gitPath, dst))
+	b, err = os.ReadFile(filepath.Join(gitPath, dst))
 	if err != nil {
 		return dst, nil
 	}
@@ -312,7 +311,7 @@ func (f FileProto) Refs(u *url.URL) ([]Ref, error) {
 				return nil
 			}
 
-			b, err := ioutil.ReadFile(path)
+			b, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}

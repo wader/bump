@@ -22,7 +22,7 @@ Use [semver](https://semver.org/) to filter or transform versions.
 When a constraint is provided it will be used to find the latest version fulfilling
 the constraint.
 
-When a verison pattern is provied it will be used to transform a version.
+When a version pattern is provided it will be used to transform a version.
 
 # find latest major 1 version
 static:1.1.2,1.1.3,1.2.0|semver:^1

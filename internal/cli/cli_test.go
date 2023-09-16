@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -326,7 +325,7 @@ envb22=valueb22
 
 func TestCommand(t *testing.T) {
 	const testDataDir = "testdata"
-	testDataFiles, err := ioutil.ReadDir(testDataDir)
+	testDataFiles, err := os.ReadDir(testDataDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,7 +336,7 @@ func TestCommand(t *testing.T) {
 			t.Parallel()
 
 			testFilePath := filepath.Join(testDataDir, fi.Name())
-			b, err := ioutil.ReadFile(testFilePath)
+			b, err := os.ReadFile(testFilePath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -365,7 +364,7 @@ func TestCommand(t *testing.T) {
 			_ = actualText
 
 			if v := os.Getenv("WRITE_ACTUAL"); v != "" {
-				if err := ioutil.WriteFile(testFilePath, []byte(actualText), 0644); err != nil {
+				if err := os.WriteFile(testFilePath, []byte(actualText), 0644); err != nil {
 					t.Error(err)
 				}
 			}
