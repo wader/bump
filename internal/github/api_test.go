@@ -3,7 +3,7 @@ package github_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"testing"
@@ -33,7 +33,7 @@ func responseClient(fn func(*http.Request) (interface{}, int)) *http.Client {
 			}
 			return &http.Response{
 				StatusCode: code,
-				Body:       ioutil.NopCloser(bytes.NewReader(b)),
+				Body:       io.NopCloser(bytes.NewReader(b)),
 			}, nil
 		}),
 	}

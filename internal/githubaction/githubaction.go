@@ -170,7 +170,7 @@ func (c Command) run() []error {
 	}
 
 	for _, check := range bfs.Checks {
-		// only concider this check for update actions
+		// only consider this check for update actions
 		bfs.SkipCheckFn = func(skipC *bump.Check) bool {
 			return skipC.Name != check.Name
 		}

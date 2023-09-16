@@ -2,7 +2,7 @@ package fetch
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -69,7 +69,7 @@ func (f fetchFilter) Filter(versions filter.Versions, versionKey string) (filter
 		return nil, "", fmt.Errorf("error response: %s", r.Status)
 	}
 
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, "", err
 	}

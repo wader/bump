@@ -26,14 +26,14 @@ func Read(r io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	len := binary.BigEndian.Uint16(lenBuf[:])
-	if len == 0 {
+	l := binary.BigEndian.Uint16(lenBuf[:])
+	if l == 0 {
 		return "", nil
 	}
-	if len < 4 {
-		return "", fmt.Errorf("short len %d", len)
+	if l < 4 {
+		return "", fmt.Errorf("short len %d", l)
 	}
-	lineBuf := make([]byte, len-4)
+	lineBuf := make([]byte, l-4)
 	_, err = io.ReadFull(r, lineBuf[:])
 	if err != nil {
 		return "", err

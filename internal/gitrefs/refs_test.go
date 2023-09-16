@@ -3,7 +3,7 @@ package gitrefs_test
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,7 +16,7 @@ import (
 )
 
 func TestLocalRepo(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "refs-test")
+	tempDir, err := os.MkdirTemp("", "refs-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestHTTPClient(t *testing.T) {
 	hp := &gitrefs.HTTPProto{Client: &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (resp *http.Response, err error) {
 			roundTripCalled = true
-			return &http.Response{StatusCode: 200, Body: ioutil.NopCloser(&bytes.Buffer{})}, nil
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(&bytes.Buffer{})}, nil
 		}),
 	}}
 	u, _ := url.Parse("http://test/repo.git")

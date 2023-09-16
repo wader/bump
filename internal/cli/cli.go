@@ -153,7 +153,7 @@ func (c Command) run() []error {
 	}
 	parseFlags := func(args []string) ([]error, bool) {
 		err := flags.Parse(args)
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			flags.Usage()
 			return nil, false
 		} else if err != nil {
