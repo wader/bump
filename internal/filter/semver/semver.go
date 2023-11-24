@@ -131,10 +131,8 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 			svs = append(svs, semverVersion{ver: ver, v: v})
 		}
 	}
-	sort.Slice(svs, func(i int, j int) bool {
-		return svs[i].ver.LessThan(svs[j].ver)
-	})
 
+	// if template assume input is already sorted etc
 	if f.template != "" {
 		var vs filter.Versions
 		for _, v := range svs {
@@ -142,6 +140,10 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 		}
 		return vs, versionKey, nil
 	}
+
+	sort.Slice(svs, func(i int, j int) bool {
+		return svs[i].ver.LessThan(svs[j].ver)
+	})
 
 	var latest *semverVersion
 	var latestIndex int
