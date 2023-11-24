@@ -22,3 +22,6 @@ semver:vn.n.n.n -> semver:vn.n.n.n
 
 n -> error:no filter matches
 n. -> error:no filter matches
+
+semver -> error:no filter matches
+semver: -> error:needs a contraint or version pattern argument
