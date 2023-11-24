@@ -32,13 +32,13 @@ func TestLocalRepo(t *testing.T) {
 		return string(b)
 	}
 
-	runOrFatal("git", "init", ".")
+	runOrFatal("git", "init", "-b", "main", ".")
 
 	actualRefs, err := gitrefs.Refs("file://"+tempDir, gitrefs.AllProtos)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedRefs := []gitrefs.Ref{{Name: "HEAD", ObjID: "refs/heads/master"}}
+	expectedRefs := []gitrefs.Ref{{Name: "HEAD", ObjID: "refs/heads/main"}}
 	if !reflect.DeepEqual(expectedRefs, actualRefs) {
 		t.Errorf("expected %v got %v", expectedRefs, actualRefs)
 	}
@@ -54,7 +54,7 @@ func TestLocalRepo(t *testing.T) {
 	}
 	expectedRefs = []gitrefs.Ref{
 		{Name: "HEAD", ObjID: sha},
-		{Name: "refs/heads/master", ObjID: sha},
+		{Name: "refs/heads/main", ObjID: sha},
 	}
 	if !reflect.DeepEqual(expectedRefs, actualRefs) {
 		t.Errorf("expected %v got %v", expectedRefs, actualRefs)
