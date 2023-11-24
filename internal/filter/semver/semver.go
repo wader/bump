@@ -1,6 +1,7 @@
 package semver
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -70,6 +71,9 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 
 	if prefix != Name && prefix != "" {
 		return nil, nil
+	}
+	if arg == "" {
+		return nil, fmt.Errorf("needs a contraint or version pattern argument")
 	}
 
 	constraint, err = mmsemver.NewConstraint(arg)
