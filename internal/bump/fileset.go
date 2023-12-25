@@ -44,6 +44,7 @@ type Check struct {
 
 	// bump: <name> /<re>/ <pipeline>
 	PipelineLineNr   int
+	CurrentREStr     string
 	CurrentRE        *regexp.Regexp
 	Pipeline         pipeline.Pipeline
 	PipelineDuration time.Duration
@@ -80,7 +81,7 @@ type Current struct {
 }
 
 func (c *Check) String() string {
-	return fmt.Sprintf("%s /%s/ %s", c.Name, c.CurrentRE, c.Pipeline)
+	return fmt.Sprintf("%s /%s/ %s", c.Name, c.CurrentREStr, c.Pipeline)
 }
 
 // FileSet is a set of File:s, filters and checks found in files
@@ -443,7 +444,8 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 		if err != nil {
 			return fmt.Errorf("%s: %w", pipelineStr, err)
 		}
-		currentRe, err := regexp.Compile(currentReStr)
+		// compile in multi-line mode: ^$ matches end/start of line
+		currentRe, err := regexp.Compile("(?m)" + currentReStr)
 		if err != nil {
 			return fmt.Errorf("invalid current version regexp: %q", currentReStr)
 		}
@@ -454,6 +456,7 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 		check := &Check{
 			File:           file,
 			Name:           name,
+			CurrentREStr:   currentReStr,
 			CurrentRE:      currentRe,
 			PipelineLineNr: lineNr,
 			Pipeline:       pl,
