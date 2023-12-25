@@ -1,0 +1,6 @@
+/a:
+bump: name /^name: (1)$/ static:2
+name: 1
+$ bump current a
+>stdout:
+a:2: name 1

@@ -248,7 +248,7 @@ func parseTestCases(s string) []testCase {
 		tc := testCase{}
 		seenRun := false
 
-		for _, section := range sectionParser(regexp.MustCompile(`^([/>].*:)|[#\$!].*$`), c) {
+		for _, section := range sectionParser(regexp.MustCompile(`^([/>].*:)|^[#\$!].*$`), c) {
 			n, v := section.Name, section.Value
 
 			switch {
