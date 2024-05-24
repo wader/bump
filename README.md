@@ -519,17 +519,18 @@ test
 
 ## Ideas, TODOs and known issues
 
-- GitHub action: How to access package manager tools? separate docker images? bump-go? install bump binary in other image?
 - GitHub action: PR labels
 - GitHub action: some kind of tests
 - Configuration templates, go package etc?
 - Proper version number for bump itself
 - How to use with hg
 - docker filter: value should be layer hash
-- docker filter: support auth and other registries
+- docker filter: support non-anon-auth
 - Named pipelines, "ffmpeg|^4", generate URLs to changelog/diff?
 - Allow to escape `|` in filter argument
-- Allow alternative regexp "/" delimiter in version match or maybe some simplified match syntax?
-- sort filter: make smarter? natural sort?
+- Sort filter: make smarter? natural sort?
+- Custom verison sort filter somehow, similar to `sort -k` etc?
 - Some kind of cache to better handle multiple invocations
 - HTTP service to run pipelines?
+- bump-ng: Use jq or some other pipe-friednly langauge
+- Some kind help to build URLs that have major.mainor etc, ex: https://host/name-1.2/name-1.3.4.tar.gz
