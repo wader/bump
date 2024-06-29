@@ -59,7 +59,12 @@ func (f fetchFilter) String() string {
 }
 
 func (f fetchFilter) Filter(versions filter.Versions, versionKey string) (filter.Versions, string, error) {
-	r, err := http.Get(f.urlStr)
+	req, err := http.NewRequest("GET", f.urlStr, nil)
+	req.Header.Add("User-Agent", "bump (https://github.com/wader/bump)")
+	if err != nil {
+		return nil, "", err
+	}
+	r, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, "", err
 	}
