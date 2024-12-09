@@ -14,7 +14,7 @@ const Name = "docker"
 var Help = `
 docker:<image>
 
-Produce versions from a image on ducker hub or other registry.
+Produce versions from a image on docker hub or other registry.
 Currently only supports anonymous access.
 
 docker:alpine|^3
