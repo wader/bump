@@ -4,7 +4,7 @@ A generic version tracking and update tool.
 
 Bump can be used to automate version updates where other version and package
 management system does not fit or can't be used. This can be for example when
-having versions of dependencies in Makefiles, Dockerfiles, scripts or other
+having versions of dependencies in Makefile:s, Dockerfile:s, scripts or other
 kinds of texts.
 
 For example this is a Bumpfile where we want to keep the Dockerfile base image
@@ -12,26 +12,30 @@ version updated to the latest exact alpine 3 version.
 
 ```sh (exec)
 $ cat Bumpfile
+# Configuration for "alpine"
 alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
+# Look for matches in Dockerfile
 Dockerfile
 # See current versions
 $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.17.3
+alpine 3.21.0
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.17.3 AS builder
++FROM alpine:3.21.0 AS builder
  
 # Write changes
 $ bump update
 ```
+
+It's also possible to have configuration embedded in source code comments etc and it's also possible to specify files to check instead of using a `Bumpfile`.
 
 A real world example is the
 [Dockerfile used by wader/static-ffmpeg](https://github.com/wader/static-ffmpeg/blob/master/Dockerfile)
@@ -276,13 +280,13 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.4.4
+4.4.5
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-c1738cdff0d3b6426f3e6fd9bf25af7d145ad26f
+9cf854a0c8827823df99e9924b84a2adb3dc98a5
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.20.3
+1.23.4
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -318,7 +322,7 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.40.0
+2.47.1
 ```
 
 ### gitrefs<span id="filter-gitrefs">
@@ -345,27 +349,27 @@ Supported package systems npm, go, maven, pypi and cargo.
 
 ```sh
 $ bump pipeline 'depsdev:npm:react|*'
-18.2.0
+19.0.0
 $ bump pipeline 'depsdev:go:golang.org/x/net'
-0.0.0-20180926154720-4dfa2610cdf3
+0.0.0-20150423015207-d175081df37e
 $ bump pipeline 'depsdev:maven:log4j:log4j|^1'
 1.2.17
 $ bump pipeline 'depsdev:pypi:av|*'
-10.0.0
+14.0.1
 $ bump pipeline 'depsdev:cargo:serde|*'
-1.0.160
+1.0.215
 ```
 
 ### docker<span id="filter-docker">
 
 `docker:<image>`
 
-Produce versions from a image on ducker hub or other registry.
+Produce versions from a image on docker hub or other registry.
 Currently only supports anonymous access.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.17.3
+3.21.0
 $ bump pipeline 'docker:mwader/static-ffmpeg|^4'
 4.4.1
 $ bump pipeline 'docker:ghcr.io/nginx-proxy/nginx-proxy|^0.9'
@@ -381,7 +385,7 @@ be the tag or branch name, version the revision.
 
 ```sh
 $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
-1.14.2
+1.14.5
 ```
 
 ### fetch<span id="filter-fetch">
@@ -404,7 +408,7 @@ Use [semver](https://semver.org/) to filter or transform versions.
 When a constraint is provided it will be used to find the latest version fulfilling
 the constraint.
 
-When a verison pattern is provied it will be used to transform a version.
+When a version pattern is provided it will be used to transform a version.
 
 ```sh
 # find latest major 1 version
