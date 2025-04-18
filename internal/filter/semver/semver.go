@@ -35,6 +35,11 @@ static:1.2.3|n.n
 
 var nRe = regexp.MustCompile("n")
 
+// semver package used to allow leading zeroes but got more strict
+// so let's regexp to strip them out for now, maybe in the future use
+// own or fork of a semver version and constraint package
+var findLeadingZeroes = regexp.MustCompile(`(?:^|\.)0+[1-9]`)
+
 func expandTemplate(v *mmsemver.Version, t string) string {
 	prerelease := ""
 	if v.Prerelease() != "" {
@@ -73,7 +78,7 @@ func New(prefix string, arg string) (filter filter.Filter, err error) {
 		return nil, nil
 	}
 	if arg == "" {
-		return nil, fmt.Errorf("needs a contraint or version pattern argument")
+		return nil, fmt.Errorf("needs a constraint or version pattern argument")
 	}
 
 	constraint, err = mmsemver.NewConstraint(arg)
@@ -116,7 +121,16 @@ func (f semverFilter) Filter(versions filter.Versions, versionKey string) (filte
 
 	var svs []semverVersion
 	for _, v := range versions {
-		ver, err := mmsemver.NewVersion(v[versionKey])
+		verStr := v[versionKey]
+		filteredVerStr := findLeadingZeroes.ReplaceAllStringFunc(verStr, func(s string) string {
+			s, hasDot := strings.CutPrefix(s, ".")
+			s = strings.TrimLeft(s, "0")
+			if hasDot {
+				return "." + s
+			}
+			return s
+		})
+		ver, err := mmsemver.NewVersion(filteredVerStr)
 		// ignore everything that is not valid semver
 		if err != nil {
 			continue
