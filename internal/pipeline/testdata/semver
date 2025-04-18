@@ -24,7 +24,7 @@ n -> error:no filter matches
 n. -> error:no filter matches
 
 semver -> error:no filter matches
-semver: -> error:needs a contraint or version pattern argument
+semver: -> error:needs a constraint or version pattern argument
 
 n.n.n -> semver:n.n.n
     4.5.6,1.2.3 -> 4.5.6,1.2.3 4.5.6
@@ -32,3 +32,8 @@ n.n.n -> semver:n.n.n
 semver:n -> semver:n
     4.5.6,1.2.3 -> 4,1 4
     1.2.3,4.5.6 -> 1,4 1
+
+# ignore leading zeros
+* -> semver:*
+    1.2.3,03.04.05 -> 03.04.05,1.2.3 03.04.05
+    22,1001 -> 1001,22 1001
