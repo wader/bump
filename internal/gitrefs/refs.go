@@ -203,6 +203,7 @@ func (h HTTPProto) Refs(u *url.URL) ([]Ref, error) {
 	// some git hosts behave differently based on this, github allows
 	// to skip .git if set for example
 	req.Header.Set("User-Agent", "git/1.0")
+	req.Header.Set("Accept", "*/*")
 
 	resp, err := client.Do(req)
 	if err != nil {
