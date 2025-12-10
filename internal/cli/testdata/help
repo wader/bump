@@ -18,6 +18,11 @@ COMMANDS:
   diff [FILE...]        Show diff of what an update would change
   pipeline PIPELINE     Run a filter pipeline
 
+EXIT CODE:
+  0: All went fine
+  1: Something went wrong
+  3: Check found new versions
+
 BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"

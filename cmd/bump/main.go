@@ -69,7 +69,7 @@ func (OS) Exec(args []string, env []string) error {
 
 func main() {
 	o := OS{}
-	var r interface{ Run() []error }
+	var r interface{ Run() ([]error, int) }
 
 	if github.IsActionEnv(o.Getenv) {
 		r = githubaction.Command{
@@ -83,7 +83,9 @@ func main() {
 		}
 	}
 
-	if errs := r.Run(); errs != nil {
-		os.Exit(1)
+	errs, ec := r.Run()
+	if errs != nil && ec == 0 {
+		ec = 1
 	}
+	os.Exit(ec)
 }

@@ -1,3 +1,7 @@
+# Configuration for "alpine"
+# <name> <regexp to match version> <pipeline>
 alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# Links to include in commit
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
+# Look for matches in Dockerfile
 Dockerfile
