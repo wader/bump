@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"strings"
@@ -19,6 +20,9 @@ func main() {
 
 	for _, nf := range all.Filters() {
 		syntax, description, examples := filter.ParseHelp(nf.Help)
+
+		description = template.HTMLEscapeString(description)
+		description = strings.NewReplacer("*", "&#42;").Replace(description)
 
 		var syntaxMDParts []string
 		for i, s := range syntax {

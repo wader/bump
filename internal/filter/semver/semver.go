@@ -22,8 +22,16 @@ Use [semver](https://semver.org/) to filter or transform versions.
 
 When a constraint is provided it will be used to find the latest version fulfilling
 the constraint.
-
 When a version pattern is provided it will be used to transform a version.
+
+See full [constraint syntax documentation](https://github.com/Masterminds/semver?tab=readme-ov-file#checking-version-constraints) more for details.
+
+Constraint syntax summary:
+  - ^1 is equivalent to >= 1.0.0 < 2.0.0
+  - ~1.2.3 is equivalent to >= 1.2.3, < 1.3.0
+  - * is equivalent to >= 0.0.0
+  - 1.2.x is equivalent to >= 1.2.0, < 1.3.0
+  - 1.2 - 1.4.5 is equivalent to <pre>>= 1.2 <= 1.4.5<pre>
 
 # find latest major 1 version
 static:1.1.2,1.1.3,1.2.0|semver:^1

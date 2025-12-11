@@ -337,7 +337,7 @@ $ bump pipeline 'https://github.com/git/git.git|*'
 `gitrefs:<repo>`
 
 Produce versions from all refs for a git repository. Name will be the whole ref
-like "refs/tags/v2.7.3" and commit will be the commit hash.
+like &#34;refs/tags/v2.7.3&#34; and commit will be the commit hash.
 
 Use git filter to get versions from only tags.
 
@@ -399,7 +399,7 @@ $ bump pipeline 'svn:https://svn.apache.org/repos/asf/subversion|*'
 
 `fetch:<url>`, `<http://>` or `<https://>`
 
-Fetch a URL and produce one version with the content as the key "name".
+Fetch a URL and produce one version with the content as the key &#34;name&#34;.
 
 ```sh
 $ bump pipeline 'fetch:http://libjpeg.sourceforge.net|/latest release is version (\w+)/'
@@ -414,8 +414,16 @@ Use [semver](https://semver.org/) to filter or transform versions.
 
 When a constraint is provided it will be used to find the latest version fulfilling
 the constraint.
-
 When a version pattern is provided it will be used to transform a version.
+
+See full [constraint syntax documentation](https://github.com/Masterminds/semver?tab=readme-ov-file#checking-version-constraints) more for details.
+
+Constraint syntax summary:
+  - ^1 is equivalent to &gt;= 1.0.0 &lt; 2.0.0
+  - ~1.2.3 is equivalent to &gt;= 1.2.3, &lt; 1.3.0
+  - &#42; is equivalent to &gt;= 0.0.0
+  - 1.2.x is equivalent to &gt;= 1.2.0, &lt; 1.3.0
+  - 1.2 - 1.4.5 is equivalent to &lt;pre&gt;&gt;= 1.2 &lt;= 1.4.5&lt;pre&gt;
 
 ```sh
 # find latest major 1 version
@@ -442,7 +450,7 @@ If name does not match regexp the version will be skipped.
 If only a regexp and no template is provided and no submatches are defined the
 name will not be changed.
 
-If submatches are defined a submatch named "name" or "value" will be used as
+If submatches are defined a submatch named &#34;name&#34; or &#34;value&#34; will be used as
 name and value otherwise first submatch will be used as name.
 
 If a template is defined and no submatches was defined it will be used as a
