@@ -79,13 +79,13 @@ type Command struct {
 }
 
 // Run bump in a github action environment
-func (c Command) Run() []error {
-	errs := c.run()
+func (c Command) Run() ([]error, int) {
+	errs, ec := c.run()
 	for _, err := range errs {
 		fmt.Fprintln(c.OS.Stderr(), err)
 	}
 
-	return errs
+	return errs, ec
 }
 
 func (c Command) execs(argss [][]string) error {
@@ -106,16 +106,16 @@ func (c Command) shell(cmd string, env []string) error {
 	return nil
 }
 
-func (c Command) run() []error {
+func (c Command) run() ([]error, int) {
 	ae, err := github.NewActionEnv(c.OS.Getenv, c.Version)
 	if err != nil {
-		return []error{err}
+		return []error{err}, 1
 	}
 	// TODO: used in tests
 	ae.Client.BaseURL = c.OS.Getenv("GITHUB_API_URL")
 
 	if ae.SHA == "" {
-		return []error{fmt.Errorf("GITHUB_SHA not set")}
+		return []error{fmt.Errorf("GITHUB_SHA not set")}, 1
 	}
 
 	// support "bump_files" for backward compatibility
@@ -142,7 +142,7 @@ func (c Command) run() []error {
 	} {
 		s, err := ae.Input(v.n)
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 		*v.s = s
 	}
@@ -157,7 +157,7 @@ func (c Command) run() []error {
 		{"git", "remote", "set-url", "--push", "origin", pushURL},
 	})
 	if err != nil {
-		return []error{err}
+		return []error{err}, 1
 	}
 
 	// TODO: whitespace in filenames
@@ -166,7 +166,7 @@ func (c Command) run() []error {
 	filenames = append(filenames, strings.Fields(files)...)
 	bfs, errs := bump.NewBumpFileSet(c.OS, all.Filters(), bumpfile, filenames)
 	if errs != nil {
-		return errs
+		return errs, 1
 	}
 
 	for _, check := range bfs.Checks {
@@ -177,7 +177,7 @@ func (c Command) run() []error {
 
 		ua, errs := bfs.UpdateActions()
 		if errs != nil {
-			return errs
+			return errs, 1
 		}
 
 		fmt.Printf("Checking %s\n", check.Name)
@@ -195,15 +195,15 @@ func (c Command) run() []error {
 
 		branchName, err := templateReplacerFn(branchTemplate)
 		if err != nil {
-			return []error{fmt.Errorf("branch template error: %w", err)}
+			return []error{fmt.Errorf("branch template error: %w", err)}, 1
 		}
 		if err := github.IsValidBranchName(branchName); err != nil {
-			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}
+			return []error{fmt.Errorf("branch name %q is invalid: %w", branchName, err)}, 1
 		}
 
 		prs, err := ae.RepoRef.ListPullRequest("state", "all", "head", ae.Owner+":"+branchName)
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 
 		// there is already an open or closed PR for this update
@@ -218,12 +218,12 @@ func (c Command) run() []error {
 		// reset HEAD back to triggering commit before each PR
 		err = c.execs([][]string{{"git", "reset", "--hard", ae.SHA}})
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 
 		for _, fc := range ua.FileChanges {
 			if err := c.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
-				return []error{err}
+				return []error{err}, 1
 			}
 
 			fmt.Printf("  Wrote change to %s\n", fc.File.Name)
@@ -231,21 +231,21 @@ func (c Command) run() []error {
 
 		for _, rs := range ua.RunShells {
 			if err := c.shell(rs.Cmd, rs.Env); err != nil {
-				return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
+				return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}, 1
 			}
 		}
 
 		title, err := templateReplacerFn(titleTemplate)
 		if err != nil {
-			return []error{fmt.Errorf("title template error: %w", err)}
+			return []error{fmt.Errorf("title template error: %w", err)}, 1
 		}
 		commitBody, err := templateReplacerFn(commitBodyTemplate)
 		if err != nil {
-			return []error{fmt.Errorf("title template error: %w", err)}
+			return []error{fmt.Errorf("title template error: %w", err)}, 1
 		}
 		prBody, err := templateReplacerFn(prBodyTemplate)
 		if err != nil {
-			return []error{fmt.Errorf("title template error: %w", err)}
+			return []error{fmt.Errorf("title template error: %w", err)}, 1
 		}
 
 		err = c.execs([][]string{
@@ -256,7 +256,7 @@ func (c Command) run() []error {
 			{"git", "push", "--force", "origin", "HEAD:refs/heads/" + branchName},
 		})
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 
 		fmt.Printf("  Committed and pushed\n")
@@ -268,11 +268,11 @@ func (c Command) run() []error {
 			Body:  &prBody,
 		})
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 
 		fmt.Printf("  Created PR %s\n", newPr.URL)
 	}
 
-	return nil
+	return nil, 0
 }

@@ -13,7 +13,9 @@ version updated to the latest exact alpine 3 version.
 ```sh (exec)
 $ cat Bumpfile
 # Configuration for "alpine"
+# <name> <regexp to match version> <pipeline>
 alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
+# Links to include in commit
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 # Look for matches in Dockerfile
 Dockerfile
@@ -22,14 +24,14 @@ $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.21.0
+alpine 3.23.0
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.21.0 AS builder
++FROM alpine:3.23.0 AS builder
  
 # Write changes
 $ bump update
@@ -119,6 +121,11 @@ COMMANDS:
   update [FILE...]      Update versions
   diff [FILE...]        Show diff of what an update would change
   pipeline PIPELINE     Run a filter pipeline
+
+EXIT CODE:
+  0: All went fine
+  1: Something went wrong
+  3: Check found new versions
 
 BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
@@ -280,13 +287,13 @@ can be helpful when testing pipelines.
 ```sh (exec)
 # Latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4'
-4.4.5
+4.4.6
 # Commit hash of the latest 4.0 ffmpeg version
 $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
-9cf854a0c8827823df99e9924b84a2adb3dc98a5
+784eb97e010cee6bb4d81c352bd6eed4b7dedda2
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.23.4
+1.25.5
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -322,7 +329,7 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.47.1
+2.52.0
 ```
 
 ### gitrefs<span id="filter-gitrefs">
@@ -349,15 +356,15 @@ Supported package systems npm, go, maven, pypi and cargo.
 
 ```sh
 $ bump pipeline 'depsdev:npm:react|*'
-19.0.0
+19.2.1
 $ bump pipeline 'depsdev:go:golang.org/x/net'
-0.0.0-20150423015207-d175081df37e
+0.0.0-20120125194513-f61fbb80d2fc
 $ bump pipeline 'depsdev:maven:log4j:log4j|^1'
 1.2.17
 $ bump pipeline 'depsdev:pypi:av|*'
-14.0.1
+16.0.1
 $ bump pipeline 'depsdev:cargo:serde|*'
-1.0.215
+1.0.228
 ```
 
 ### docker<span id="filter-docker">
@@ -369,7 +376,7 @@ Currently only supports anonymous access.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.21.0
+3.23.0
 $ bump pipeline 'docker:mwader/static-ffmpeg|^4'
 4.4.1
 $ bump pipeline 'docker:ghcr.io/nginx-proxy/nginx-proxy|^0.9'

@@ -55,6 +55,11 @@ COMMANDS:
   diff [FILE...]        Show diff of what an update would change
   pipeline PIPELINE     Run a filter pipeline
 
+EXIT CODE:
+  0: All went fine
+  1: Something went wrong
+  3: Check found new versions
+
 BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"
@@ -126,15 +131,15 @@ Examples:
 }
 
 // Run bump command
-func (c Command) Run() []error {
-	errs := c.run()
+func (c Command) Run() ([]error, int) {
+	errs, ec := c.run()
 	for _, err := range errs {
 		fmt.Fprintln(c.OS.Stderr(), err)
 	}
-	return errs
+	return errs, ec
 }
 
-func (c Command) run() []error {
+func (c Command) run() ([]error, int) {
 	var bumpfile string
 	var include string
 	var exclude string
@@ -163,34 +168,34 @@ func (c Command) run() []error {
 	}
 
 	if err, ok := parseFlags(c.OS.Args()[1:]); err != nil || !ok {
-		return err
+		return err, 1
 	}
 	if len(flags.Args()) == 0 {
 		flags.Usage()
-		return nil
+		return nil, 0
 	}
 	command := flags.Arg(0)
-	if err, ok := parseFlags(flags.Args()[1:]); err != nil || !ok {
-		return err
+	if errs, ok := parseFlags(flags.Args()[1:]); errs != nil || !ok {
+		return errs, 1
 	}
 
 	if command == "version" {
 		fmt.Fprintf(c.OS.Stdout(), "%s\n", c.Version)
-		return nil
+		return nil, 0
 	} else if command == "help" {
 		filterName := flags.Arg(0)
 		if filterName == "" {
 			flags.Usage()
-			return nil
+			return nil, 0
 		}
 		for _, nf := range c.filters() {
 			if filterName == nf.Name {
 				fmt.Fprint(c.OS.Stdout(), c.helpFilter(nf))
-				return nil
+				return nil, 0
 			}
 		}
 		fmt.Fprintf(c.OS.Stdout(), "Filter not found\n")
-		return nil
+		return nil, 0
 	}
 
 	files := flags.Args()
@@ -210,12 +215,12 @@ func (c Command) run() []error {
 	case "list", "current", "check", "diff", "update":
 		bumpfilePassed := flagWasPassed(flags, "f")
 		if bumpfilePassed && len(files) > 0 {
-			return []error{errors.New("both bumpfile and file arguments can't be specified")}
+			return []error{errors.New("both bumpfile and file arguments can't be specified")}, 1
 		}
 
 		bfs, errs = bump.NewBumpFileSet(c.OS, c.filters(), bumpfile, files)
 		if errs != nil {
-			return errs
+			return errs, 1
 		}
 	}
 
@@ -226,12 +231,12 @@ func (c Command) run() []error {
 		}
 		for n := range includes {
 			if _, found := names[n]; !found {
-				return []error{fmt.Errorf("include name %q not found", n)}
+				return []error{fmt.Errorf("include name %q not found", n)}, 1
 			}
 		}
 		for n := range excludes {
 			if _, found := names[n]; !found {
-				return []error{fmt.Errorf("exclude name %q not found", n)}
+				return []error{fmt.Errorf("exclude name %q not found", n)}, 1
 			}
 		}
 		bfs.SkipCheckFn = func(c *bump.Check) bool {
@@ -274,7 +279,7 @@ func (c Command) run() []error {
 	case "check", "diff", "update":
 		ua, errs := bfs.UpdateActions()
 		if errs != nil {
-			return errs
+			return errs, 1
 		}
 
 		switch command {
@@ -292,6 +297,12 @@ func (c Command) run() []error {
 					fmt.Fprintf(c.OS.Stdout(), "%s %s\n", vs.Check.Name, vs.Check.Latest)
 				}
 			}
+			ec := 0
+			if len(ua.VersionChanges) > 0 {
+				// first non-special exit code to make it distinguishable from other errors
+				ec = 3
+			}
+			return nil, ec
 		case "diff":
 			for _, fc := range ua.FileChanges {
 				fmt.Fprint(c.OS.Stdout(), fc.Diff)
@@ -299,7 +310,7 @@ func (c Command) run() []error {
 		case "update":
 			for _, fc := range ua.FileChanges {
 				if err := c.OS.WriteFile(fc.File.Name, []byte(fc.NewText)); err != nil {
-					return []error{err}
+					return []error{err}, 1
 				}
 			}
 			if runCommands {
@@ -308,7 +319,7 @@ func (c Command) run() []error {
 						fmt.Fprintf(c.OS.Stdout(), "%s: shell: %s %s\n", rs.Check.Name, strings.Join(rs.Env, " "), rs.Cmd)
 					}
 					if err := c.OS.Shell(rs.Cmd, rs.Env); err != nil {
-						return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}
+						return []error{fmt.Errorf("%s: shell: %s: %w", rs.Check.Name, rs.Cmd, err)}, 1
 					}
 				}
 			} else if len(ua.RunShells) > 0 {
@@ -321,7 +332,7 @@ func (c Command) run() []error {
 		plStr := flags.Arg(0)
 		pl, err := pipeline.New(c.filters(), plStr)
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 		logFn := func(format string, v ...interface{}) {}
 		if verbose {
@@ -332,13 +343,13 @@ func (c Command) run() []error {
 		logFn("Parsed pipeline: %s", pl)
 		v, err := pl.Value(logFn)
 		if err != nil {
-			return []error{err}
+			return []error{err}, 1
 		}
 		fmt.Fprintf(c.OS.Stdout(), "%s\n", v)
 	default:
 		flags.Usage()
-		return []error{fmt.Errorf("unknown command: %s", command)}
+		return []error{fmt.Errorf("unknown command: %s", command)}, 1
 	}
 
-	return nil
+	return nil, 0
 }
