@@ -7,19 +7,19 @@ import (
 	"github.com/wader/bump/internal/deepequal"
 )
 
-type tfFn func(format string, args ...interface{})
+type tfFn func(format string, args ...any)
 
-func (fn tfFn) Errorf(format string, args ...interface{}) {
+func (fn tfFn) Errorf(format string, args ...any) {
 	fn(format, args...)
 }
 
-func (fn tfFn) Fatalf(format string, args ...interface{}) {
+func (fn tfFn) Fatalf(format string, args ...any) {
 	fn(format, args...)
 }
 
 func TestError(t *testing.T) {
 	deepequal.Error(
-		tfFn(func(format string, args ...interface{}) {
+		tfFn(func(format string, args ...any) {
 			expected := `
 --- name expected
 +++ name actual

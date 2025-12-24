@@ -334,9 +334,9 @@ func (c Command) run() ([]error, int) {
 		if err != nil {
 			return []error{err}, 1
 		}
-		logFn := func(format string, v ...interface{}) {}
+		logFn := func(format string, v ...any) {}
 		if verbose {
-			logFn = func(format string, v ...interface{}) {
+			logFn = func(format string, v ...any) {
 				fmt.Fprintf(c.OS.Stderr(), format+"\n", v...)
 			}
 		}

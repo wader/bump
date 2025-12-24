@@ -50,7 +50,7 @@ func (pl Pipeline) String() string {
 }
 
 // Run pipeline
-func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn func(format string, v ...interface{})) (outValue string, outVersions filter.Versions, err error) {
+func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn func(format string, v ...any)) (outValue string, outVersions filter.Versions, err error) {
 	vs := inVersions
 	versionKey := inVersionKey
 
@@ -92,7 +92,7 @@ func (pl Pipeline) Run(inVersionKey string, inVersions filter.Versions, logFn fu
 }
 
 // Value run the pipeline and return one value or error
-func (pl Pipeline) Value(logFn func(format string, v ...interface{})) (value string, err error) {
+func (pl Pipeline) Value(logFn func(format string, v ...any)) (value string, err error) {
 	v, pp, err := pl.Run(DefaultVersionKey, nil, logFn)
 	if err != nil {
 		return "", err

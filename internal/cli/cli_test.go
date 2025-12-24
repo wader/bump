@@ -28,7 +28,7 @@ type testCaseFile struct {
 }
 
 type testCase struct {
-	parts []interface{}
+	parts []any
 }
 
 type testCaseComment string
