@@ -9,7 +9,7 @@ import (
 type GetenvFn func(name string) string
 
 // ActionEnv is a GitHub action environment
-// https://help.github.com/en/articles/virtual-environments-for-github-actions#default-environment-variables
+// https://docs.github.com/en/actions/reference/workflows-and-actions/variables
 type ActionEnv struct {
 	getenv     GetenvFn
 	Client     *Client
@@ -31,7 +31,7 @@ type ActionEnv struct {
 
 // IsActionEnv return true if running in action environment
 func IsActionEnv(getenv GetenvFn) bool {
-	return getenv("GITHUB_ACTION") != ""
+	return getenv("GITHUB_ACTIONS") != ""
 }
 
 // NewActionEnv creates a new ActionEnv
