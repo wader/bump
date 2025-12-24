@@ -19,7 +19,7 @@ func (r RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return r(req)
 }
 
-func responseClient(fn func(*http.Request) (interface{}, int)) *http.Client {
+func responseClient(fn func(*http.Request) (any, int)) *http.Client {
 	return &http.Client{
 		Transport: RoundTripFunc(func(req *http.Request) (*http.Response, error) {
 			v, code := fn(req)
@@ -44,7 +44,7 @@ func TestHeaders(t *testing.T) {
 	c := &github.Client{
 		Token:   "abc",
 		Version: "test",
-		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
+		HTTPClient: responseClient(func(req *http.Request) (any, int) {
 			gotCalled = true
 			type c struct {
 				UserAgent     string
@@ -87,7 +87,7 @@ func TestListPullRequest(t *testing.T) {
 
 	c := &github.Client{
 		Token: "abc",
-		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
+		HTTPClient: responseClient(func(req *http.Request) (any, int) {
 			type c struct {
 				Method     string
 				ParamState string
@@ -142,7 +142,7 @@ func TestCreatePullRequest(t *testing.T) {
 
 	c := &github.Client{
 		Token: "abc",
-		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
+		HTTPClient: responseClient(func(req *http.Request) (any, int) {
 			type r struct {
 				Method string
 				Path   string
@@ -196,7 +196,7 @@ func TestUpdatePullRequest(t *testing.T) {
 
 	c := &github.Client{
 		Token: "abc",
-		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
+		HTTPClient: responseClient(func(req *http.Request) (any, int) {
 			type r struct {
 				Method   string
 				Path     string
@@ -241,7 +241,7 @@ func TestCreateComment(t *testing.T) {
 
 	c := &github.Client{
 		Token: "abc",
-		HTTPClient: responseClient(func(req *http.Request) (interface{}, int) {
+		HTTPClient: responseClient(func(req *http.Request) (any, int) {
 			type r struct {
 				Method     string
 				Path       string

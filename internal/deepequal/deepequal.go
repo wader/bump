@@ -8,11 +8,11 @@ import (
 )
 
 type tf interface {
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
 }
 
-func testDeepEqual(fn func(format string, args ...interface{}), name string, expected interface{}, actual interface{}) {
+func testDeepEqual(fn func(format string, args ...any), name string, expected any, actual any) {
 	expectedStr := fmt.Sprintf("%s", expected)
 	actualStr := fmt.Sprintf("%s", actual)
 
@@ -32,10 +32,10 @@ func testDeepEqual(fn func(format string, args ...interface{}), name string, exp
 	}
 }
 
-func Error(t tf, name string, expected interface{}, actual interface{}) {
+func Error(t tf, name string, expected any, actual any) {
 	testDeepEqual(t.Errorf, name, expected, actual)
 }
 
-func Fatal(t tf, name string, expected interface{}, actual interface{}) {
+func Fatal(t tf, name string, expected any, actual any) {
 	testDeepEqual(t.Fatalf, name, expected, actual)
 }
