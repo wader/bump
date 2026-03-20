@@ -64,7 +64,7 @@ BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"
 CONFIG is
-  NAME /REGEXP/ PIPELINE |
+  NAME /REGEXP/ [PIPELINE] |
   NAME command COMMAND |
   NAME after COMMAND |
   NAME message MESSAGE |
@@ -253,7 +253,7 @@ func (c Command) run() ([]error, int) {
 	case "list":
 		for _, check := range bfs.SelectedChecks() {
 			if verbose {
-				fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s\n", check.File.Name, check.PipelineLineNr, check)
+				fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s\n", check.File.Name, check.LineNr, check)
 				for _, cs := range check.CommandShells {
 					fmt.Fprintf(c.OS.Stdout(), "%s:%d: %s command %s\n", cs.File.Name, cs.LineNr, check.Name, cs.Cmd)
 				}

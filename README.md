@@ -19,19 +19,23 @@ alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 # Look for matches in Dockerfile
 Dockerfile
+# Configuration for "alpine"
+# <name> <regexp to match version> <pipeline>
+# Links to include in commit
+# Look for matches in Dockerfile
 # See current versions
 $ bump current
 Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
-alpine 3.23.0
+alpine 3.23.3
 # See what will be changed
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
 @@ -1,2 +1,2 @@
 -FROM alpine:3.9.2 AS builder
-+FROM alpine:3.23.0 AS builder
++FROM alpine:3.23.3 AS builder
  
 # Write changes
 $ bump update
@@ -131,7 +135,7 @@ BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"
 CONFIG is
-  NAME /REGEXP/ PIPELINE |
+  NAME /REGEXP/ [PIPELINE] |
   NAME command COMMAND |
   NAME after COMMAND |
   NAME message MESSAGE |
@@ -293,7 +297,7 @@ $ bump pipeline 'https://github.com/FFmpeg/FFmpeg.git|^4|@commit'
 784eb97e010cee6bb4d81c352bd6eed4b7dedda2
 # Latest 1.0 golang docker build image
 $ bump pipeline 'docker:golang|^1'
-1.25.5
+1.26.1
 # Latest mp3lame version
 $ bump pipeline 'svn:http://svn.code.sf.net/p/lame/svn|/^RELEASE__(.*)$/|/_/./|*'
 3.100
@@ -329,7 +333,7 @@ Use gitrefs filter to get all refs unfiltered.
 
 ```sh
 $ bump pipeline 'https://github.com/git/git.git|*'
-2.52.0
+2.53.0
 ```
 
 ### gitrefs<span id="filter-gitrefs">
@@ -356,13 +360,13 @@ Supported package systems npm, go, maven, pypi and cargo.
 
 ```sh
 $ bump pipeline 'depsdev:npm:react|*'
-19.2.1
+19.2.4
 $ bump pipeline 'depsdev:go:golang.org/x/net'
 0.0.0-20120125194513-f61fbb80d2fc
 $ bump pipeline 'depsdev:maven:log4j:log4j|^1'
 1.2.17
 $ bump pipeline 'depsdev:pypi:av|*'
-16.0.1
+17.0.0
 $ bump pipeline 'depsdev:cargo:serde|*'
 1.0.228
 ```
@@ -376,7 +380,7 @@ Currently only supports anonymous access.
 
 ```sh
 $ bump pipeline 'docker:alpine|^3'
-3.23.0
+3.23.3
 $ bump pipeline 'docker:mwader/static-ffmpeg|^4'
 4.4.1
 $ bump pipeline 'docker:ghcr.io/nginx-proxy/nginx-proxy|^0.9'
