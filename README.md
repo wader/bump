@@ -19,10 +19,6 @@ alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
 # Look for matches in Dockerfile
 Dockerfile
-# Configuration for "alpine"
-# <name> <regexp to match version> <pipeline>
-# Links to include in commit
-# Look for matches in Dockerfile
 # See current versions
 $ bump current
 Dockerfile:1: alpine 3.9.2
