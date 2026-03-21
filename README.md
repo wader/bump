@@ -164,7 +164,7 @@ where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
 
 A configuration must have exactly one `PIPELINE` but can have multiple `REGEXP`
-by have additional configuration lines for the same name but by leaving out or
+by having additional configuration lines for the same name but by leaving out or
 specifying the exact same pipeline again.
 
 ### Bumpfile
