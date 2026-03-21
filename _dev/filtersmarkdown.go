@@ -18,6 +18,9 @@ func main() {
 	listBuf := &bytes.Buffer{}
 	filtersBuf := &bytes.Buffer{}
 
+	fmt.Fprintf(listBuf, "|Name|Filter|\n")
+	fmt.Fprintf(listBuf, "|-|-|\n")
+
 	for _, nf := range all.Filters() {
 		syntax, description, examples := filter.ParseHelp(nf.Help)
 
@@ -65,7 +68,7 @@ func main() {
 		)
 
 		fmt.Fprintf(listBuf, replacer.Replace(`
-[{{name}}](#filter-{{name}}) {{syntax}}<br>
+|[{{name}}](#filter-{{name}})|{{syntax}}|
 `[1:]))
 
 		fmt.Fprintf(filtersBuf, replacer.Replace(`

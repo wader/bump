@@ -11,13 +11,10 @@ For example this is a Bumpfile where we want to keep the Dockerfile base image
 version updated to the latest exact alpine 3 version.
 
 ```sh (exec)
+# Show bump configuration
 $ cat Bumpfile
-# Configuration for "alpine"
-# <name> <regexp to match version> <pipeline>
 alpine /FROM alpine:([\d.]+)/ docker:alpine|^3
-# Links to include in commit
 alpine link "Release notes" https://alpinelinux.org/posts/Alpine-$LATEST-released.html
-# Look for matches in Dockerfile
 Dockerfile
 # See current versions
 $ bump current
@@ -25,7 +22,7 @@ Dockerfile:1: alpine 3.9.2
 # See possible updates
 $ bump check
 alpine 3.23.3
-# See what will be changed
+# See what will change
 $ bump diff
 --- Dockerfile
 +++ Dockerfile
@@ -33,7 +30,7 @@ $ bump diff
 -FROM alpine:3.9.2 AS builder
 +FROM alpine:3.23.3 AS builder
  
-# Write changes
+# Apply changes
 $ bump update
 ```
 
@@ -166,6 +163,10 @@ suitable version. The syntax is similar to pipes in a shell `filter|filter|...`
 where `filter` is either in the form `name:argument` like `re:/[\d.]+/`,
 `semver:^4` or a shorter form like `/[\d.]+/`, `^4` etc.
 
+A configuration must have exactly one `PIPELINE` but can have multiple `REGEXP`
+by have additional configuration lines for the same name but by leaving out or
+specifying the exact same pipeline again.
+
 ### Bumpfile
 
 Default `bump` looks for a file named `Bumpfile` in the current directory.
@@ -175,6 +176,8 @@ read embedded configuration from.
 ```
 # comment
 NAME /REGEXP/ PIPELINE
+# additional REGEXP for NAME
+NAME /REGEXP/
 NAME [command|after] COMMAND
 NAME message MESSAGE
 NAME link TITLE URL
@@ -201,6 +204,8 @@ files containing versions to be checked or updated.
 Embedded configuration looks like this:
 ```
 bump: NAME /REGEXP/ PIPELINE
+# additional REGEXP for NAME
+bump: NAME /REGEXP/
 ```
 
 Example Dockerfile with embedded configuration:
@@ -306,18 +311,20 @@ produces versions, `re` and `semver` transforms and filters.
 
 [filtersmarkdown]: sh-start
 
-[git](#filter-git) `git:<repo>` or `<repo.git>`<br>
-[gitrefs](#filter-gitrefs) `gitrefs:<repo>`<br>
-[depsdev](#filter-depsdev) `depsdev:<system>:<package>`<br>
-[docker](#filter-docker) `docker:<image>`<br>
-[svn](#filter-svn) `svn:<repo>`<br>
-[fetch](#filter-fetch) `fetch:<url>`, `<http://>` or `<https://>`<br>
-[semver](#filter-semver) `semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`<br>
-[re](#filter-re) `re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`<br>
-[sort](#filter-sort) `sort`<br>
-[key](#filter-key) `key:<name>` or `@<name>`<br>
-[static](#filter-static) `static:<name[:key=value:...]>,...`<br>
-[err](#filter-err) `err:<error>`<br>
+|Name|Filter|
+|-|-|
+|[git](#filter-git)|`git:<repo>` or `<repo.git>`|
+|[gitrefs](#filter-gitrefs)|`gitrefs:<repo>`|
+|[depsdev](#filter-depsdev)|`depsdev:<system>:<package>`|
+|[docker](#filter-docker)|`docker:<image>`|
+|[svn](#filter-svn)|`svn:<repo>`|
+|[fetch](#filter-fetch)|`fetch:<url>`, `<http://>` or `<https://>`|
+|[semver](#filter-semver)|`semver:<constraint>`, `semver:<n.n.n-pre+build>`, `<constraint>` or `<n.n.n-pre+build>`|
+|[re](#filter-re)|`re:/<regexp>/`, `re:/<regexp>/<template>/`, `/<regexp>/` or `/<regexp>/<template>/`|
+|[sort](#filter-sort)|`sort`|
+|[key](#filter-key)|`key:<name>` or `@<name>`|
+|[static](#filter-static)|`static:<name[:key=value:...]>,...`|
+|[err](#filter-err)|`err:<error>`|
 ### git<span id="filter-git">
 
 `git:<repo>` or `<repo.git>`
