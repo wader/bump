@@ -1,0 +1,16 @@
+/a:
+bump: name /name1: (1)/
+bump: name /name2: (1)/ static:2
+bump: name /name3: (1)/ static:2
+bump: name /name4: (1)/
+/b:
+name1: 1
+name2: 1
+name3: 1
+name4: 1
+$ bump update a b
+/b:
+name1: 2
+name2: 2
+name3: 2
+name4: 2

@@ -27,7 +27,7 @@ BUMPFILE is a file with CONFIG:s or glob patterns of FILE:s
 FILE is a file with EMBEDCONFIG:s or versions to be checked and updated
 EMBEDCONFIG is "bump: CONFIG"
 CONFIG is
-  NAME /REGEXP/ PIPELINE |
+  NAME /REGEXP/ [PIPELINE] |
   NAME command COMMAND |
   NAME after COMMAND |
   NAME message MESSAGE |

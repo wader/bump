@@ -37,16 +37,22 @@ type CheckMessage struct {
 	LineNr  int
 }
 
+type CheckRE struct {
+	RawRE string
+	RE    *regexp.Regexp
+}
+
 // Check is a bump config line
 type Check struct {
-	File *File
-	Name string
+	File   *File
+	Name   string
+	LineNr int
 
 	// bump: <name> /<re>/ <pipeline>
-	PipelineLineNr   int
-	CurrentREStr     string
-	CurrentRE        *regexp.Regexp
+	CurrentREs       []CheckRE
+	PipelineFile     *File
 	Pipeline         pipeline.Pipeline
+	PipelineStr      string
 	PipelineDuration time.Duration
 
 	// bump: <name> command ...
@@ -81,7 +87,11 @@ type Current struct {
 }
 
 func (c *Check) String() string {
-	return fmt.Sprintf("%s /%s/ %s", c.Name, c.CurrentREStr, c.Pipeline)
+	var rawREs []string
+	for _, cr := range c.CurrentREs {
+		rawREs = append(rawREs, "/"+cr.RawRE+"/")
+	}
+	return fmt.Sprintf("%s %s %s", c.Name, strings.Join(rawREs, ", "), c.Pipeline)
 }
 
 // FileSet is a set of File:s, filters and checks found in files
@@ -245,7 +255,7 @@ func (fs *FileSet) Latest() []error {
 		c.PipelineDuration = r.duration
 		c.Latest = r.latest
 		if r.err != nil {
-			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.PipelineLineNr, c.Name, r.err))
+			errs = append(errs, fmt.Errorf("%s:%d: %s: %w", c.File.Name, c.LineNr, c.Name, r.err))
 		}
 	}
 
@@ -266,21 +276,23 @@ func (fs *FileSet) findCurrent() {
 				checkLineSet[lineNr] = true
 			}
 
-			for _, sm := range c.CurrentRE.FindAllSubmatchIndex(f.Text, -1) {
-				lineNr := locLine.Line(sm[0])
-				if _, ok := checkLineSet[lineNr]; ok {
-					continue
+			for _, cr := range c.CurrentREs {
+				for _, sm := range cr.RE.FindAllSubmatchIndex(f.Text, -1) {
+					lineNr := locLine.Line(sm[0])
+					if _, ok := checkLineSet[lineNr]; ok {
+						continue
+					}
+
+					f.HasCurrents = true
+
+					version := string(f.Text[sm[2]:sm[3]])
+					c.Currents = append(c.Currents, Current{
+						File:    f,
+						LineNr:  lineNr,
+						Range:   [2]int{sm[2], sm[3]},
+						Version: version,
+					})
 				}
-
-				f.HasCurrents = true
-
-				version := string(f.Text[sm[2]:sm[3]])
-				c.Currents = append(c.Currents, Current{
-					File:    f,
-					LineNr:  lineNr,
-					Range:   [2]int{sm[2], sm[3]},
-					Version: version,
-				})
 			}
 		}
 	}
@@ -291,10 +303,12 @@ func (fs *FileSet) Lint() []error {
 	var errs []error
 
 	for _, c := range fs.Checks {
-		if len(c.Currents) != 0 {
-			continue
+		if c.Pipeline == nil {
+			errs = append(errs, fmt.Errorf("%s:%d: %s has no pipeline specified", c.File.Name, c.LineNr, c.Name))
 		}
-		errs = append(errs, fmt.Errorf("%s:%d: %s has no current version matches", c.File.Name, c.PipelineLineNr, c.Name))
+		if len(c.Currents) == 0 {
+			errs = append(errs, fmt.Errorf("%s:%d: %s has no current version matches", c.File.Name, c.LineNr, c.Name))
+		}
 	}
 
 	for _, f := range fs.Files {
@@ -325,8 +339,8 @@ func (fs *FileSet) Lint() []error {
 					}
 
 					errs = append(errs, fmt.Errorf("%s:%d:%s has overlapping matches with %s:%d:%s at %s:%d",
-						ca.File.Name, ca.PipelineLineNr, ca.Name,
-						cb.File.Name, cb.PipelineLineNr, cb.Name,
+						ca.File.Name, ca.LineNr, ca.Name,
+						cb.File.Name, cb.LineNr, cb.Name,
 						cca.File.Name, cca.LineNr))
 				}
 			}
@@ -359,22 +373,25 @@ func (fs *FileSet) Replace(file *File) []byte {
 
 		// new variable for the replacer fn closure
 		c := c
-		replacers = append(replacers, rereplacer.Replace{
-			Re: c.CurrentRE,
-			Fn: func(b []byte, sm []int) []byte {
-				matchLine := locLine.Line(sm[0])
-				if _, ok := checkLineSet[matchLine]; ok {
-					return b[sm[0]:sm[1]]
-				}
 
-				l := []byte{}
-				l = append(l, b[sm[0]:sm[2]]...)
-				l = append(l, []byte(c.Latest)...)
-				l = append(l, b[sm[3]:sm[1]]...)
+		for _, cr := range c.CurrentREs {
+			replacers = append(replacers, rereplacer.Replace{
+				Re: cr.RE,
+				Fn: func(b []byte, sm []int) []byte {
+					matchLine := locLine.Line(sm[0])
+					if _, ok := checkLineSet[matchLine]; ok {
+						return b[sm[0]:sm[1]]
+					}
 
-				return l
-			},
-		})
+					l := []byte{}
+					l = append(l, b[sm[0]:sm[2]]...)
+					l = append(l, []byte(c.Latest)...)
+					l = append(l, b[sm[3]:sm[1]]...)
+
+					return l
+				},
+			})
+		}
 	}
 
 	return rereplacer.Replacer(replacers).Replace(file.Text)
@@ -434,15 +451,30 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 		if _, err := lexer.Scan(rest,
 			lexer.Concat(
 				lexer.Var("re", &currentReStr, lexer.Quoted(`/`)),
-				lexer.Re(regexp.MustCompile(`\s`)),
-				lexer.Var("pipeline", &pipelineStr, lexer.Rest(1)),
+				lexer.Var("rest", &rest, lexer.Rest(0)),
 			),
 		); err != nil {
 			return err
 		}
-		pl, err := pipeline.New(filters, pipelineStr)
-		if err != nil {
-			return fmt.Errorf("%s: %w", pipelineStr, err)
+
+		if strings.HasPrefix(rest, " ") {
+			if _, err := lexer.Scan(rest,
+				lexer.Concat(
+					lexer.Re(regexp.MustCompile(`\s`)),
+					lexer.Var("pipeline", &pipelineStr, lexer.Rest(1)),
+				),
+			); err != nil {
+				return err
+			}
+		}
+
+		var pl pipeline.Pipeline
+		if pipelineStr != "" {
+			var err error
+			pl, err = pipeline.New(filters, pipelineStr)
+			if err != nil {
+				return fmt.Errorf("%s: %w", pipelineStr, err)
+			}
 		}
 		// compile in multi-line mode: ^$ matches end/start of line
 		currentRe, err := regexp.Compile("(?m)" + currentReStr)
@@ -453,23 +485,32 @@ func (fs *FileSet) parseCheckLine(file *File, lineNr int, line string, filters [
 			return fmt.Errorf("regexp must have one submatch: %q", currentReStr)
 		}
 
-		check := &Check{
-			File:           file,
-			Name:           name,
-			CurrentREStr:   currentReStr,
-			CurrentRE:      currentRe,
-			PipelineLineNr: lineNr,
-			Pipeline:       pl,
-		}
+		check := fs.findCheckByName(name)
 
-		for _, bc := range fs.Checks {
-			if check.Name == bc.Name {
-				return fmt.Errorf("%s already used at %s:%d",
-					check.Name, bc.File.Name, bc.PipelineLineNr)
+		if check == nil {
+			check = &Check{
+				File:       file,
+				LineNr:     lineNr,
+				Name:       name,
+				CurrentREs: []CheckRE{{RawRE: currentReStr, RE: currentRe}},
+			}
+			fs.Checks = append(fs.Checks, check)
+		} else {
+			check.CurrentREs = append(check.CurrentREs, CheckRE{RawRE: currentReStr, RE: currentRe})
+		}
+		if pl != nil {
+			if check.PipelineStr == pipelineStr {
+				// nop, same as existing
+			} else if check.Pipeline != nil {
+				return fmt.Errorf("%s: pipeline different from specified at %s:%d",
+					name,
+					check.PipelineFile.Name, check.LineNr)
+			} else {
+				check.Pipeline = pl
+				check.PipelineStr = pipelineStr
+				check.PipelineFile = file
 			}
 		}
-
-		fs.Checks = append(fs.Checks, check)
 
 		return nil
 	default:

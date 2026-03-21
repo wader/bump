@@ -1,7 +1,9 @@
 /a:
-bump: name /name: (1)/ static:2
+bump: name /name: (\d)/ static:3
 /b:
 name: 1
+name: 2
 $ bump update a b
 /b:
-name: 2
+name: 3
+name: 3
