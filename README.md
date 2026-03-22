@@ -90,11 +90,14 @@ docker build -t bump .
 
 ### Build
 
-Install go and run command below and it will be installed at
+Install go and run command below and a binary will be installed at
 `$(go env GOPATH)/bin/bump`.
 
 ```sh
-go get github.com/wader/bump/cmd/bump
+# build master
+go install github.com/wader/bump/cmd/bump@master
+# copy binary to /usr/local/bin
+cp $(go env GOPATH)/bin/bump /usr/local/bin
 ```
 
 ## Usage
