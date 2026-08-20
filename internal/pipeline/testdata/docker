@@ -5,6 +5,6 @@ docker:mwader/static-ffmpeg|^3.4 -> docker:mwader/static-ffmpeg|semver:^3.4
 docker:gcr.io/google.com/cloudsdktool/google-cloud-cli|=365.0.1-alpine -> docker:gcr.io/google.com/cloudsdktool/google-cloud-cli|semver:=365.0.1-alpine
     -> 365.0.1-alpine 365.0.1-alpine
 docker:ghcr.io/nginx-proxy/nginx-proxy|0.7.0 -> docker:ghcr.io/nginx-proxy/nginx-proxy|semver:0.7.0
-    -> 0.7.0,0.7,0.7-alpine,0.7.0-alpine 0.7.0
+    -> 0.7.0,0.7.0-alpine,0.7-alpine 0.7.0
 docker:non/existing -> docker:non/existing
     -> error:401 Unauthorized
