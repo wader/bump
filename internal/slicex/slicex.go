@@ -21,3 +21,12 @@ func Unique[T comparable](s []T) []T {
 	}
 	return us
 }
+
+func Reverse[T any](s []T) []T {
+	rs := make([]T, len(s))
+	l := len(s)
+	for i, v := range s {
+		rs[l-i-1] = v
+	}
+	return rs
+}
