@@ -2,8 +2,8 @@ docker:alpine|^2.7 -> docker:alpine|semver:^2.7
     -> 2.7,2.6 2.7
 docker:mwader/static-ffmpeg|^3.4 -> docker:mwader/static-ffmpeg|semver:^3.4
     -> 3.4.2,3.4 3.4.2
-docker:gcr.io/google.com/cloudsdktool/google-cloud-cli|=365.0.1-alpine -> docker:gcr.io/google.com/cloudsdktool/google-cloud-cli|semver:=365.0.1-alpine
-    -> 365.0.1-alpine 365.0.1-alpine
+docker:gcr.io/google-containers/pause|=3.2 -> docker:gcr.io/google-containers/pause|semver:=3.2
+    -> 3.2,3.1,3.0,2.0,1.0,0.8.0 3.2
 docker:ghcr.io/nginx-proxy/nginx-proxy|0.7.0 -> docker:ghcr.io/nginx-proxy/nginx-proxy|semver:0.7.0
     -> 0.7.0,0.7.0-alpine,0.7-alpine 0.7.0
 docker:non/existing -> docker:non/existing
